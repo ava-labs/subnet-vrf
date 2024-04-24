@@ -9,8 +9,6 @@ interface IVRF {
      */
     struct VRFRequestInfo {
         uint256 requestID;
-        bytes32 keyHash;
-        uint64 subID;
         uint16 minimumRequestConfirmations;
         uint32 callbackGasLimit;
         uint32 numWords;

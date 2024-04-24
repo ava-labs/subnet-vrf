@@ -3,16 +3,21 @@ pragma solidity 0.8.18;
 
 import {IVRFProvider} from "./interfaces/IVRFProvider.sol";
 import {VRFV2WrapperConsumerBase} from "@chainlink/contracts/src/v0.8/vrf/VRFV2WrapperConsumerBase.sol";
+import {
+    TeleporterMessageInput, TeleporterFeeInfo
+} from "@teleporter/contracts/src/Teleporter/ITeleporterMessenger.sol";
 import {TeleporterOwnerUpgradeable} from "@teleporter/contracts/src/Teleporter/upgrades/TeleporterOwnerUpgradeable.sol";
 
 contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerUpgradeable {
-/**
+    /**
      * @dev  The components of VRFRequestInfo that need to be persisted when requesting
      * random values from the Chainlink VRF coordinator. These values will be sent
      * back to the partner VRFCoorindator as part of the message to fulfill
      * the request.
      */
     struct InternalRequestInfo {
+        bytes32 sourceBlockchainID;
+        address originSenderAddress;
         uint256 proxyRequestID;
         uint32 messageCallbackGasLimit;
     }
@@ -21,7 +26,8 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
      * @dev Tracks the request information by the Chainlink VRF request ID.
      */
     mapping(uint256 chainlinkVRFRequestID => InternalRequestInfo requestInfo) internal _requests;
-/**
+
+    /**
      * @dev Gas limits for receiving random words from the Chainlink VRF coordinator, and sending
      * them in a Teleporter message to the partner Teleporter VRF coordinator contract.
      */
@@ -51,7 +57,6 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
     function fulfillRandomWords(uint256 chainlinkVRFRequestID, uint256[] memory randomWords)
         internal
         override
-        nonReentrant
     {
         // Look up the corresponding VRFProxy request info for this chainlinkVRFRequestID to know
         // the correct data to include in the response.
@@ -68,8 +73,8 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
         });
         _getTeleporterMessenger().sendCrossChainMessage(
             TeleporterMessageInput({
-                destinationBlockchainID: vrfProxyBlockchainID,
-                destinationAddress: vrfProxyAddress,
+                destinationBlockchainID: requestInfo.sourceBlockchainID,
+                destinationAddress: requestInfo.originSenderAddress,
                 feeInfo: TeleporterFeeInfo({feeTokenAddress: address(0), amount: 0}),
                 requiredGasLimit: requestInfo.messageCallbackGasLimit + TELEPORTER_RECEIVE_MESSAGE_GAS_OVERHEAD,
                 allowedRelayerAddresses: new address[](0),
@@ -96,15 +101,20 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
         require(request.requestID != 0, "VRFProvider: invalid proxy request ID");
 
         // Pass the request on the Chainlink VRF coordinator
-        uint256 chainlinkVRFRequestID = VRF_V2_WRAPPER.requestRandomness(
+        uint256 chainlinkVRFRequestID = requestRandomness(
             request.minimumRequestConfirmations,
             TELEPORTER_CALLBACK_GAS_LIMIT_BASE + (TELEPORTER_CALLBACK_GAS_LIMIT_PER_WORD * request.numWords),
             request.numWords
         );
 
-        emit VRFRequestReceived(request.requestID, chainlinkVRFRequestID, request.numWords);
+        emit VRFRequestReceived(sourceBlockchainID, originSenderAddress, request.requestID, chainlinkVRFRequestID, request.numWords);
 
         _requests[chainlinkVRFRequestID] =
-            InternalRequestInfo({proxyRequestID: request.requestID, messageCallbackGasLimit: request.callbackGasLimit});
+            InternalRequestInfo({
+                sourceBlockchainID: sourceBlockchainID,
+                originSenderAddress: originSenderAddress,
+                proxyRequestID: request.requestID,
+                messageCallbackGasLimit: request.callbackGasLimit
+            });
     }
 }

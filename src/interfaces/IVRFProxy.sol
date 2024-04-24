@@ -4,6 +4,7 @@ pragma solidity 0.8.18;
 import {IVRF} from "./IVRF.sol";
 
 interface IVRFProxy is IVRF {
+    error VRFProviderAddressIsZero();
     event RandomWordsRequested(
         uint256 indexed requestID,
         address indexed requester,

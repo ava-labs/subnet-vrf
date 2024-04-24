@@ -46,7 +46,7 @@ contract VRFProxy is IVRFProxy, TeleporterOwnerUpgradeable{
     constructor(address teleporterRegistryAddress_, bytes32 vrfProviderBlockchainID_, address vrfProviderAddress_)
         TeleporterOwnerUpgradeable(teleporterRegistryAddress_, msg.sender)
     {
-        require(vrfProviderAddress_ != address(0), "VRFProxy: zero VRF provider address");
+        if (vrfProviderAddress_ == address(0)) revert VRFProviderAddressIsZero();
         vrfProviderBlockchainID = vrfProviderBlockchainID_;
         vrfProviderAddress = vrfProviderAddress_;
     }
@@ -133,9 +133,8 @@ contract VRFProxy is IVRFProxy, TeleporterOwnerUpgradeable{
         delete requesters[response.requestID];
 
         // Pass the result to the destination with the exact gas limit.
-        VRFV2WrapperConsumerBase v;
         bytes memory resp =
-            abi.encodeWithSelector(v.rawFulfillRandomWords.selector, response.requestID, response.randomWords);
+            abi.encodeWithSelector(VRFV2WrapperConsumerBase.rawFulfillRandomWords.selector, response.requestID, response.randomWords);
 
         // Call with explicitly the amount of callback gas requested.
         // Note that _callWithExactGas will revert if we do not have sufficient gas
