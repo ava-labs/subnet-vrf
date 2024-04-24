@@ -7,6 +7,7 @@ import {
 import {TeleporterOwnerUpgradeable} from "@teleporter/contracts/src/Teleporter/upgrades/TeleporterOwnerUpgradeable.sol";
 import {IVRFProxy} from "./interfaces/IVRFProxy.sol";
 import {GasUtils} from "./libraries/GasUtils.sol";
+import {VRFV2WrapperConsumerBase} from "@chainlink/contracts/src/v0.8/vrf/VRFV2WrapperConsumerBase.sol";
 
 contract VRFProxy is IVRFProxy, TeleporterOwnerUpgradeable{
    /**
@@ -66,7 +67,7 @@ contract VRFProxy is IVRFProxy, TeleporterOwnerUpgradeable{
         uint16 minimumRequestConfirmations,
         uint32 callbackGasLimit,
         uint32 numWords
-    ) external nonReentrant returns (uint256) {
+    ) external returns (uint256) {
         // Assign the next nonce to be used at the request ID.
         uint256 nonce = ++requestNonce;
         VRFRequestInfo memory requestInfo = VRFRequestInfo({
@@ -132,7 +133,7 @@ contract VRFProxy is IVRFProxy, TeleporterOwnerUpgradeable{
         delete requesters[response.requestID];
 
         // Pass the result to the destination with the exact gas limit.
-        VRFConsumerBaseV2 v;
+        VRFV2WrapperConsumerBase v;
         bytes memory resp =
             abi.encodeWithSelector(v.rawFulfillRandomWords.selector, response.requestID, response.randomWords);
 

@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.4;
+pragma solidity 0.8.18;
 
-interface IVRFProxy {
+import {IVRF} from "./IVRF.sol";
+
+interface IVRFProxy is IVRF {
     event RandomWordsRequested(
         uint256 indexed requestID,
         address indexed requester,
