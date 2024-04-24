@@ -7,6 +7,7 @@ import {
     TeleporterMessageInput, TeleporterFeeInfo
 } from "@teleporter/contracts/src/Teleporter/ITeleporterMessenger.sol";
 import {TeleporterOwnerUpgradeable} from "@teleporter/contracts/src/Teleporter/upgrades/TeleporterOwnerUpgradeable.sol";
+import {LinkTokenInterface} from "@chainlink/contracts/src/v0.8/shared/interfaces/LinkTokenInterface.sol";
 
 contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerUpgradeable {
     /**
@@ -22,6 +23,9 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
         uint32 messageCallbackGasLimit;
     }
 
+    mapping(address user => uint256 linkBalance) public balances;
+    mapping(address user => address[] consumers) public consumers;
+    mapping(address user => mapping(address consumer => bool isApproved)) public isApproved;
     /**
      * @dev Tracks the request information by the Chainlink VRF request ID.
      */
@@ -43,6 +47,24 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
         TeleporterOwnerUpgradeable(teleporterRegistryAddress_, msg.sender)
         VRFV2WrapperConsumerBase(link_, chainlinkVRFWrapper_)
     {}
+
+    /**
+     * @dev Enables external parties and service users to deposit $LINK for a specific account
+     */
+    function deposit(address user, uint256 amount) external {
+        LINK.transferFrom(msg.sender, address(this), amount);
+        balances[user] += amount;
+    }
+
+    function addConsumers(address[] calldata _consumers) external {
+        uint256 length = _consumers.length; // gas optimization
+        for (uint256 i; i < length; i++) {
+            if (!isApproved[msg.sender][_consumers[i]]) {
+                isApproved[msg.sender][_consumers[i]] = true;
+                consumers[msg.sender].push(_consumers[i]);
+            }
+        }
+    }
 
     /**
      * @dev Fulfills the VRF request identified by the given request ID with the randomWords provided. Called from

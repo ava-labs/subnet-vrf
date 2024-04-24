@@ -32,13 +32,6 @@ contract VRFProxy is IVRFProxy, TeleporterOwnerUpgradeable{
     uint256 public requestNonce;
 
     /**
-     * @dev The set of addresses that are allowed to request random values from this VRFProxy.
-     * @notice All allowed consumers are capabale of using any VRF subscription available to the VRFProvider contract
-     * on the partner blockchain. Those subscriptions are used to pay VRF fees on the partner blockchain.
-     */
-    mapping(address consumer => bool allowed) public allowedConsumers;
-
-    /**
      * @dev The address that request the random values for each request ID.
      */
     mapping(uint256 requestID => address requester) public requesters;

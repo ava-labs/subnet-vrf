@@ -13,7 +13,7 @@ interface IVRF {
         uint32 callbackGasLimit;
         uint32 numWords;
     }
-    
+
     /**
      * @notice Represents all of the relevant information for a given VRF
      * response message received back from the VRF provided on a partner chain.
