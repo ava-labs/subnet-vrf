@@ -52,16 +52,51 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
      * @dev Enables external parties and service users to deposit $LINK for a specific account
      */
     function deposit(address user, uint256 amount) external {
-        LINK.transferFrom(msg.sender, address(this), amount);
         balances[user] += amount;
+        LINK.transferFrom(msg.sender, address(this), amount);
     }
 
+    /**
+     * @dev Enables external parties and service users to withdraw their $LINK
+     */
+    function withdraw(uint256 amount) external {
+        if (balances[msg.sender] >= amount) revert InsufficientBalance();
+        unchecked {
+            balances[msg.sender] -= amount;
+        }
+        LINK.transfer(msg.sender, amount);
+    }
+
+    /**
+     * @dev Enables users to add consumers to their acc / accounts which can use their link
+     */
     function addConsumers(address[] calldata _consumers) external {
         uint256 length = _consumers.length; // gas optimization
         for (uint256 i; i < length; i++) {
             if (!isApproved[msg.sender][_consumers[i]]) {
                 isApproved[msg.sender][_consumers[i]] = true;
                 consumers[msg.sender].push(_consumers[i]);
+            }
+        }
+    }
+
+    /**
+     * @dev Enables users to remove consumers to their acc / restrict accounts from using their link
+     */
+    function removeConsumers(address[] calldata _consumers) external {
+        uint256 length = _consumers.length; // gas optimization
+        for (uint256 i; i < length; i++) {
+            address consumer = _consumers[i];
+            if (isApproved[msg.sender][consumer]) {
+                address[] memory approvedConsumers = consumers[msg.sender];
+                uint256 _length = approvedConsumers.length;
+                for (uint j; j < _length; j++) {
+                    if (approvedConsumers[j] == consumer) {
+                        delete isApproved[msg.sender][consumer];
+                        consumers[msg.sender][j] = approvedConsumers[_length - 1];
+                        consumers[msg.sender].pop();
+                    }
+                }
             }
         }
     }
@@ -119,12 +154,25 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
         override
     {
         // Decode the request.
-        VRFRequestInfo memory request = abi.decode(message, (VRFRequestInfo));
+        (VRFRequestInfo memory request, address stakeholder, address consumer) = abi.decode(message, (VRFRequestInfo, address, address));
         require(request.requestID != 0, "VRFProvider: invalid proxy request ID");
+
+        uint32 total = TELEPORTER_CALLBACK_GAS_LIMIT_BASE + (TELEPORTER_CALLBACK_GAS_LIMIT_PER_WORD * request.numWords);
+
+        // Ensure that consumer is approved by the stakeholder
+        if (!isApproved[stakeholder][consumer]) revert ConsumerNotApprovedBySelectedStakeholder();
+
+        // Ensure that stakeholder has enough balance
+        if (total > balances[stakeholder]) revert InsufficientBalance();
+        unchecked {
+             balances[stakeholder] -= total;
+        }
+
+        emit Payment(stakeholder, consumer, total);
 
         // Pass the request on the Chainlink VRF coordinator
         uint256 chainlinkVRFRequestID = requestRandomness(
-            TELEPORTER_CALLBACK_GAS_LIMIT_BASE + (TELEPORTER_CALLBACK_GAS_LIMIT_PER_WORD * request.numWords),
+            total,
             request.minimumRequestConfirmations,
             request.numWords
         );

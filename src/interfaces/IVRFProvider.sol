@@ -3,7 +3,11 @@ pragma solidity 0.8.18;
 
 import {IVRF} from "./IVRF.sol";
 
-interface IVRFProvider is IVRF{
+interface IVRFProvider is IVRF {
+    error InsufficientBalance();
+    error ConsumerNotApprovedBySelectedStakeholder();
+
+    event Payment(address stakeholder, address consumer, uint256 total);
     /**
      * @dev Emitted when a message is received from the partner VRFProxy requesting random values.
      * @param proxyRequestID - The request ID specified in the message from the VRFProxy. Separate from the

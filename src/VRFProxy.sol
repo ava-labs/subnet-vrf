@@ -57,6 +57,7 @@ contract VRFProxy is IVRFProxy, TeleporterOwnerUpgradeable{
      * request ID is separate from any VRF request ID assigned on the partner chain by the VRFProdiver.
      */
     function requestRandomWords(
+        address stakeholder,
         uint16 minimumRequestConfirmations,
         uint32 callbackGasLimit,
         uint32 numWords
@@ -83,7 +84,7 @@ contract VRFProxy is IVRFProxy, TeleporterOwnerUpgradeable{
                 feeInfo: TeleporterFeeInfo({feeTokenAddress: address(0), amount: 0}),
                 requiredGasLimit: VRF_REQUEST_REQUIRED_GAS,
                 allowedRelayerAddresses: new address[](0),
-                message: abi.encode(requestInfo)
+                message: abi.encode(requestInfo, stakeholder, msg.sender)
             })
         );
 
