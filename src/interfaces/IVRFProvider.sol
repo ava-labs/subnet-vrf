@@ -7,7 +7,25 @@ interface IVRFProvider is IVRF {
     error InsufficientBalance();
     error ConsumerNotApprovedBySelectedStakeholder();
 
-    event Payment(address stakeholder, address consumer, uint256 total);
+    /**
+     * @dev  The components of VRFRequestInfo that need to be persisted when requesting
+     * random values from the Chainlink VRF coordinator. These values will be sent
+     * back to the partner VRFCoorindator as part of the message to fulfill
+     * the request.
+     */
+    struct InternalRequestInfo {
+        bytes32 sourceBlockchainID;
+        address originSenderAddress;
+        uint256 proxyRequestID;
+        uint32 messageCallbackGasLimit;
+    }
+
+    event LinkDeposit(address indexed stakeholder, uint256 amount);
+    event LinkWithdraw(address indexed stakeholder, uint256 amount);
+    event ConsumerAdded(address indexed consumer);
+    event ConsumerRemoved(address indexed consumer);
+
+    event Payment(address indexed stakeholder, address indexed consumer, uint256 total);
     /**
      * @dev Emitted when a message is received from the partner VRFProxy requesting random values.
      * @param proxyRequestID - The request ID specified in the message from the VRFProxy. Separate from the

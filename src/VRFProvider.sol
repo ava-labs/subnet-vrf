@@ -10,19 +10,6 @@ import {TeleporterOwnerUpgradeable} from "@teleporter/contracts/src/Teleporter/u
 import {LinkTokenInterface} from "@chainlink/contracts/src/v0.8/shared/interfaces/LinkTokenInterface.sol";
 
 contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerUpgradeable {
-    /**
-     * @dev  The components of VRFRequestInfo that need to be persisted when requesting
-     * random values from the Chainlink VRF coordinator. These values will be sent
-     * back to the partner VRFCoorindator as part of the message to fulfill
-     * the request.
-     */
-    struct InternalRequestInfo {
-        bytes32 sourceBlockchainID;
-        address originSenderAddress;
-        uint256 proxyRequestID;
-        uint32 messageCallbackGasLimit;
-    }
-
     mapping(address user => uint256 linkBalance) public balances;
     mapping(address user => address[] consumers) public consumers;
     mapping(address user => mapping(address consumer => bool isApproved)) public isApproved;
@@ -49,11 +36,23 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
     {}
 
     /**
+     * @dev Enables stakeholders to deposit $LINK
+     */
+    function deposit(uint256 amount) external {
+        _deposit(msg.sender, amount);
+    }
+
+    /**
      * @dev Enables external parties and service users to deposit $LINK for a specific account
      */
-    function deposit(address user, uint256 amount) external {
-        balances[user] += amount;
+    function depositForSomeone(address stakeholder, uint256 amount) external {
+        _deposit(stakeholder, amount);
+    }
+
+    function _deposit(address stakeholder, uint256 amount) private {
+        balances[stakeholder] += amount;
         LINK.transferFrom(msg.sender, address(this), amount);
+        emit LinkDeposit(stakeholder, amount);
     }
 
     /**
@@ -65,6 +64,7 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
             balances[msg.sender] -= amount;
         }
         LINK.transfer(msg.sender, amount);
+        emit LinkWithdraw(msg.sender, amount);
     }
 
     /**
@@ -73,9 +73,11 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
     function addConsumers(address[] calldata _consumers) external {
         uint256 length = _consumers.length; // gas optimization
         for (uint256 i; i < length; i++) {
-            if (!isApproved[msg.sender][_consumers[i]]) {
-                isApproved[msg.sender][_consumers[i]] = true;
-                consumers[msg.sender].push(_consumers[i]);
+            address consumer = _consumers[i];
+            if (!isApproved[msg.sender][consumer]) {
+                isApproved[msg.sender][consumer] = true;
+                consumers[msg.sender].push(consumer);
+                emit ConsumerAdded(consumer);
             }
         }
     }
@@ -95,6 +97,7 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
                         delete isApproved[msg.sender][consumer];
                         consumers[msg.sender][j] = approvedConsumers[_length - 1];
                         consumers[msg.sender].pop();
+                        emit ConsumerRemoved(consumer);
                     }
                 }
             }
