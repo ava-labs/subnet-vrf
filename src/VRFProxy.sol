@@ -1,20 +1,26 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.18;
 
+import "./interfaces/IVRFConsumerRegistry.sol";
+import {IVRFProxy} from "./interfaces/IVRFProxy.sol";
+import {GasUtils} from "./libraries/GasUtils.sol";
 import {
     TeleporterMessageInput, TeleporterFeeInfo
 } from "@teleporter/contracts/src/Teleporter/ITeleporterMessenger.sol";
 import {TeleporterOwnerUpgradeable} from "@teleporter/contracts/src/Teleporter/upgrades/TeleporterOwnerUpgradeable.sol";
-import {IVRFProxy} from "./interfaces/IVRFProxy.sol";
-import {GasUtils} from "./libraries/GasUtils.sol";
 import {VRFV2WrapperConsumerBase} from "@chainlink/contracts/src/v0.8/vrf/VRFV2WrapperConsumerBase.sol";
 
-contract VRFProxy is IVRFProxy, TeleporterOwnerUpgradeable{
+contract VRFProxy is IVRFProxy, TeleporterOwnerUpgradeable {
    /**
      * @dev The estimated amount of gas used by the VRFProvider on the partner chain to request random values from the
      * Chainlink VRF coordinator. This is the required gas limit for the Teleporter message sent to request the values.
      */
     uint256 public constant VRF_REQUEST_REQUIRED_GAS = 500_000;
+
+    /**
+     * @dev The contract storing wallet statudrd, defining the approved consumers.
+     */
+    IVRFConsumerRegistry public immutable vrfConsumerRegistry;
 
     /**
      * @dev The blockchain ID of the partner blockchain where the VRFProvider contract is deployed.
@@ -36,12 +42,15 @@ contract VRFProxy is IVRFProxy, TeleporterOwnerUpgradeable{
      */
     mapping(uint256 requestID => address requester) public requesters;
 
-    constructor(address teleporterRegistryAddress_, bytes32 vrfProviderBlockchainID_, address vrfProviderAddress_)
+    constructor(address teleporterRegistryAddress_, address vrfConsumerRegistry_, bytes32 vrfProviderBlockchainID_, address vrfProviderAddress_)
         TeleporterOwnerUpgradeable(teleporterRegistryAddress_, msg.sender)
     {
         if (vrfProviderAddress_ == address(0)) revert VRFProviderAddressIsZero();
-        vrfProviderBlockchainID = vrfProviderBlockchainID_;
         vrfProviderAddress = vrfProviderAddress_;
+        if (vrfConsumerRegistry_ == address(0)) revert VRFConsumerRegistryAddressIsZero();
+        vrfConsumerRegistry = IVRFConsumerRegistry(vrfConsumerRegistry_);
+        if (vrfProviderBlockchainID_ == bytes32(0)) revert VRFProviderBlockchainIdIsZero();
+        vrfProviderBlockchainID = vrfProviderBlockchainID_;
     }
 
     /**
@@ -62,6 +71,7 @@ contract VRFProxy is IVRFProxy, TeleporterOwnerUpgradeable{
         uint32 callbackGasLimit,
         uint32 numWords
     ) external returns (uint256) {
+        if (!vrfConsumerRegistry.isValid(msg.sender)) revert CallerIsNotAnApprovedConsumer();
         // Assign the next nonce to be used at the request ID.
         uint256 nonce = ++requestNonce;
         VRFRequestInfo memory requestInfo = VRFRequestInfo({
@@ -87,7 +97,7 @@ contract VRFProxy is IVRFProxy, TeleporterOwnerUpgradeable{
                 message: abi.encode(requestInfo, stakeholder, msg.sender)
             })
         );
-
+        // ensure msg.sender is right, make proxy whitelist per stake or something to keep things permissionless/trustless
         emit RandomWordsRequested({
             requestID: nonce,
             requester: msg.sender,

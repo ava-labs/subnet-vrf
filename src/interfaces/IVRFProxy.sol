@@ -4,7 +4,15 @@ pragma solidity 0.8.18;
 import {IVRF} from "./IVRF.sol";
 
 interface IVRFProxy is IVRF {
+
     error VRFProviderAddressIsZero();
+    error VRFConsumerRegistryAddressIsZero();
+    error VRFProviderBlockchainIdIsZero();
+    error CallerIsNotAnApprovedConsumer();
+
+    /**
+     * @dev Emmited when a request for random words is made.
+     */
     event RandomWordsRequested(
         uint256 indexed requestID,
         address indexed requester,
