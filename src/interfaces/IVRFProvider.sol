@@ -1,11 +1,16 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-IDentifier: UNLICENSED
 pragma solidity 0.8.18;
 
 import {IVRF} from "./IVRF.sol";
 
 interface IVRFProvider is IVRF {
+
     error InsufficientBalance();
     error ConsumerNotApprovedBySelectedStakeholder();
+    error CallerIsNotAnApprovedProxy();
+    error VRFProxyRegistryAddressIsZero();
+    error InvalidProxyRequestID();
+    error InvalidChainlinkVRFRequestID();
 
     /**
      * @dev  The components of VRFRequestInfo that need to be persisted when requesting
@@ -20,12 +25,21 @@ interface IVRFProvider is IVRF {
         uint32 messageCallbackGasLimit;
     }
 
-    event LinkDeposit(address indexed stakeholder, uint256 amount);
-    event LinkWithdraw(address indexed stakeholder, uint256 amount);
-    event ConsumerAdded(address indexed consumer);
-    event ConsumerRemoved(address indexed consumer);
+    /**
+     * @dev Emitted when $LINK is deposited to the contract.
+     */
+    event Deposit(uint256 amount);
 
-    event Payment(address indexed stakeholder, address indexed consumer, uint256 total);
+    /**
+     * @dev Emitted when $LINK is withdrawn from the contract.
+     */
+    event Withdraw(uint256 amount);
+
+    /**
+     * @dev Emitted when $LINK payment has been made with purpose of a VRF request creation.
+     */
+    event Payment(address indexed proxyAddress, uint256 indexed proxyRequestID, uint256 total);
+
     /**
      * @dev Emitted when a message is received from the partner VRFProxy requesting random values.
      * @param proxyRequestID - The request ID specified in the message from the VRFProxy. Separate from the
@@ -34,7 +48,7 @@ interface IVRFProvider is IVRF {
      * the random value request. Separate from the proxy request ID.
      * @param numWords - The number of random uint256 words requested.
      */
-    event VRFRequestReceived(bytes32 blockchainId, address sourceSender, uint256 indexed proxyRequestID, uint256 indexed chainlinkVRFRequestID, uint32 numWords);
+    event VRFRequestReceived(bytes32 blockchainID, address sourceSender, uint256 indexed proxyRequestID, uint256 indexed chainlinkVRFRequestID, uint32 numWords);
 
     /**
      * @dev Emitted when a VRF request is fulfilled by the Chainlink VRF Coordinator, and the random

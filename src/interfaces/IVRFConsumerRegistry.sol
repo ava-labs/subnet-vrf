@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-IDentifier: UNLICENSED
 pragma solidity 0.8.18;
 
 interface IVRFConsumerRegistry {

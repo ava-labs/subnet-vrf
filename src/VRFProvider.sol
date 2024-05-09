@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-IDentifier: UNLICENSED
 pragma solidity 0.8.18;
 
 import {IVRFProvider} from "./interfaces/IVRFProvider.sol";
+import {IVRFProxyRegistry} from "./interfaces/IVRFProxyRegistry.sol";
 import {VRFV2WrapperConsumerBase} from "@chainlink/contracts/src/v0.8/vrf/VRFV2WrapperConsumerBase.sol";
 import {
     TeleporterMessageInput, TeleporterFeeInfo
@@ -10,9 +11,17 @@ import {TeleporterOwnerUpgradeable} from "@teleporter/contracts/src/Teleporter/u
 import {LinkTokenInterface} from "@chainlink/contracts/src/v0.8/shared/interfaces/LinkTokenInterface.sol";
 
 contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerUpgradeable {
-    mapping(address user => uint256 linkBalance) public balances;
-    mapping(address user => address[] consumers) public consumers;
-    mapping(address user => mapping(address consumer => bool isApproved)) public isApproved;
+
+    /**
+     * @dev Variable containing the $LINK balance, deposited by the official authorities.
+     */
+    uint256 public balance;
+
+    /**
+     * @dev Variable containing the VRF Proxy Registry, contract used for management of proxies.
+     */
+    IVRFProxyRegistry public vrfProxyRegistry;
+
     /**
      * @dev Tracks the request information by the Chainlink VRF request ID.
      */
@@ -28,80 +37,38 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
 
     constructor(
         address teleporterRegistryAddress_,
+        address vrfProxyRegistry_,
         address chainlinkVRFWrapper_,
         address link_
     )
         TeleporterOwnerUpgradeable(teleporterRegistryAddress_, msg.sender)
         VRFV2WrapperConsumerBase(link_, chainlinkVRFWrapper_)
-    {}
+    {
+        if (vrfProxyRegistry_ == address(0)) revert VRFProxyRegistryAddressIsZero();
+        vrfProxyRegistry = IVRFProxyRegistry(vrfProxyRegistry_);
+    }
 
     /**
      * @dev Enables stakeholders to deposit $LINK
      */
-    function deposit(uint256 amount) external {
-        _deposit(msg.sender, amount);
-    }
-
-    /**
-     * @dev Enables external parties and service users to deposit $LINK for a specific account
-     */
-    function depositForSomeone(address stakeholder, uint256 amount) external {
-        _deposit(stakeholder, amount);
-    }
-
-    function _deposit(address stakeholder, uint256 amount) private {
-        balances[stakeholder] += amount;
+    function deposit(uint256 amount) external onlyOwner {
         LINK.transferFrom(msg.sender, address(this), amount);
-        emit LinkDeposit(stakeholder, amount);
+        unchecked {
+            balance += amount;
+        }
+        emit Deposit(amount);
     }
 
     /**
      * @dev Enables external parties and service users to withdraw their $LINK
      */
-    function withdraw(uint256 amount) external {
-        if (balances[msg.sender] >= amount) revert InsufficientBalance();
+    function withdraw(uint256 amount) external onlyOwner {
+        if (balance >= amount) revert InsufficientBalance();
         unchecked {
-            balances[msg.sender] -= amount;
+            balance -= amount;
         }
         LINK.transfer(msg.sender, amount);
-        emit LinkWithdraw(msg.sender, amount);
-    }
-
-    /**
-     * @dev Enables users to add consumers to their acc / accounts which can use their link
-     */
-    function addConsumers(address[] calldata _consumers) external {
-        uint256 length = _consumers.length; // gas optimization
-        for (uint256 i; i < length; i++) {
-            address consumer = _consumers[i];
-            if (!isApproved[msg.sender][consumer]) {
-                isApproved[msg.sender][consumer] = true;
-                consumers[msg.sender].push(consumer);
-                emit ConsumerAdded(consumer);
-            }
-        }
-    }
-
-    /**
-     * @dev Enables users to remove consumers to their acc / restrict accounts from using their link
-     */
-    function removeConsumers(address[] calldata _consumers) external {
-        uint256 length = _consumers.length; // gas optimization
-        for (uint256 i; i < length; i++) {
-            address consumer = _consumers[i];
-            if (isApproved[msg.sender][consumer]) {
-                address[] memory approvedConsumers = consumers[msg.sender];
-                uint256 _length = approvedConsumers.length;
-                for (uint j; j < _length; j++) {
-                    if (approvedConsumers[j] == consumer) {
-                        delete isApproved[msg.sender][consumer];
-                        consumers[msg.sender][j] = approvedConsumers[_length - 1];
-                        consumers[msg.sender].pop();
-                        emit ConsumerRemoved(consumer);
-                    }
-                }
-            }
-        }
+        emit Withdraw(amount);
     }
 
     /**
@@ -121,7 +88,7 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
         // Look up the corresponding VRFProxy request info for this chainlinkVRFRequestID to know
         // the correct data to include in the response.
         InternalRequestInfo memory requestInfo = _requests[chainlinkVRFRequestID];
-        require(requestInfo.proxyRequestID != 0, "VRFProvider: invalid Chainlink VRF request ID");
+        if (requestInfo.proxyRequestID == 0) revert InvalidChainlinkVRFRequestID();
 
         emit VRFRequestFulfilled(requestInfo.proxyRequestID, chainlinkVRFRequestID, uint32(randomWords.length));
 
@@ -131,6 +98,7 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
             randomWords: randomWords,
             callbackGasLimit: requestInfo.messageCallbackGasLimit
         });
+
         _getTeleporterMessenger().sendCrossChainMessage(
             TeleporterMessageInput({
                 destinationBlockchainID: requestInfo.sourceBlockchainID,
@@ -156,37 +124,39 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
         internal
         override
     {
+        if (!vrfProxyRegistry.isValid(sourceBlockchainID, originSenderAddress)) revert CallerIsNotAnApprovedProxy();
+
         // Decode the request.
-        (VRFRequestInfo memory request, address stakeholder, address consumer) = abi.decode(message, (VRFRequestInfo, address, address));
-        require(request.requestID != 0, "VRFProvider: invalid proxy request ID");
+        (VRFRequestInfo memory request) = abi.decode(message, (VRFRequestInfo));
+        // gas opt
+        uint256 proxyRequestID = request.requestID;
+        uint32 numWords = request.numWords;
+        if (proxyRequestID == 0) revert InvalidProxyRequestID();
 
-        uint32 total = TELEPORTER_CALLBACK_GAS_LIMIT_BASE + (TELEPORTER_CALLBACK_GAS_LIMIT_PER_WORD * request.numWords);
-
-        // Ensure that consumer is approved by the stakeholder
-        if (!isApproved[stakeholder][consumer]) revert ConsumerNotApprovedBySelectedStakeholder();
+        uint32 total = TELEPORTER_CALLBACK_GAS_LIMIT_BASE + (TELEPORTER_CALLBACK_GAS_LIMIT_PER_WORD * numWords);
 
         // Ensure that stakeholder has enough balance
-        if (total > balances[stakeholder]) revert InsufficientBalance();
+        if (total > balance) revert InsufficientBalance();
         unchecked {
-             balances[stakeholder] -= total;
+             balance -= total;
         }
 
-        emit Payment(stakeholder, consumer, total);
+        emit Payment(originSenderAddress, proxyRequestID, total);
 
         // Pass the request on the Chainlink VRF coordinator
         uint256 chainlinkVRFRequestID = requestRandomness(
             total,
             request.minimumRequestConfirmations,
-            request.numWords
+            numWords
         );
 
-        emit VRFRequestReceived(sourceBlockchainID, originSenderAddress, request.requestID, chainlinkVRFRequestID, request.numWords);
+        emit VRFRequestReceived(sourceBlockchainID, originSenderAddress, proxyRequestID, chainlinkVRFRequestID, numWords);
 
         _requests[chainlinkVRFRequestID] =
             InternalRequestInfo({
                 sourceBlockchainID: sourceBlockchainID,
                 originSenderAddress: originSenderAddress,
-                proxyRequestID: request.requestID,
+                proxyRequestID: proxyRequestID,
                 messageCallbackGasLimit: request.callbackGasLimit
             });
     }

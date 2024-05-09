@@ -1,8 +1,8 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-IDentifier: UNLICENSED
 pragma solidity 0.8.18;
 
-import "./interfaces/IVRFConsumerRegistry.sol";
-import "@openzeppelin/contracts@4.8.1/access/Ownable.sol";
+import {IVRFConsumerRegistry} from "./interfaces/IVRFConsumerRegistry.sol";
+import {Ownable} from "@openzeppelin/contracts@4.8.1/access/Ownable.sol";
 
 contract VRFConsumerRegistry is IVRFConsumerRegistry, Ownable {
 

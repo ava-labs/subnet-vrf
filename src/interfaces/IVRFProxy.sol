@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-IDentifier: UNLICENSED
 pragma solidity 0.8.18;
 
 import {IVRF} from "./IVRF.sol";
@@ -7,8 +7,11 @@ interface IVRFProxy is IVRF {
 
     error VRFProviderAddressIsZero();
     error VRFConsumerRegistryAddressIsZero();
-    error VRFProviderBlockchainIdIsZero();
+    error VRFProviderBlockchainIDIsZero();
     error CallerIsNotAnApprovedConsumer();
+    error InvalidSourceBlockchainID();
+    error CallerNotVRFProvider();
+    error InvalidRequestID();
 
     /**
      * @dev Emmited when a request for random words is made.

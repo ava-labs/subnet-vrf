@@ -1,7 +1,7 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-IDentifier: UNLICENSED
 pragma solidity 0.8.18;
 
-import "./interfaces/IVRFConsumerRegistry.sol";
+import {IVRFConsumerRegistry} from "./interfaces/IVRFConsumerRegistry.sol";
 import {IVRFProxy} from "./interfaces/IVRFProxy.sol";
 import {GasUtils} from "./libraries/GasUtils.sol";
 import {
@@ -11,7 +11,7 @@ import {TeleporterOwnerUpgradeable} from "@teleporter/contracts/src/Teleporter/u
 import {VRFV2WrapperConsumerBase} from "@chainlink/contracts/src/v0.8/vrf/VRFV2WrapperConsumerBase.sol";
 
 contract VRFProxy is IVRFProxy, TeleporterOwnerUpgradeable {
-   /**
+    /**
      * @dev The estimated amount of gas used by the VRFProvider on the partner chain to request random values from the
      * Chainlink VRF coordinator. This is the required gas limit for the Teleporter message sent to request the values.
      */
@@ -49,7 +49,7 @@ contract VRFProxy is IVRFProxy, TeleporterOwnerUpgradeable {
         vrfProviderAddress = vrfProviderAddress_;
         if (vrfConsumerRegistry_ == address(0)) revert VRFConsumerRegistryAddressIsZero();
         vrfConsumerRegistry = IVRFConsumerRegistry(vrfConsumerRegistry_);
-        if (vrfProviderBlockchainID_ == bytes32(0)) revert VRFProviderBlockchainIdIsZero();
+        if (vrfProviderBlockchainID_ == bytes32(0)) revert VRFProviderBlockchainIDIsZero();
         vrfProviderBlockchainID = vrfProviderBlockchainID_;
     }
 
@@ -66,7 +66,6 @@ contract VRFProxy is IVRFProxy, TeleporterOwnerUpgradeable {
      * request ID is separate from any VRF request ID assigned on the partner chain by the VRFProdiver.
      */
     function requestRandomWords(
-        address stakeholder,
         uint16 minimumRequestConfirmations,
         uint32 callbackGasLimit,
         uint32 numWords
@@ -94,10 +93,10 @@ contract VRFProxy is IVRFProxy, TeleporterOwnerUpgradeable {
                 feeInfo: TeleporterFeeInfo({feeTokenAddress: address(0), amount: 0}),
                 requiredGasLimit: VRF_REQUEST_REQUIRED_GAS,
                 allowedRelayerAddresses: new address[](0),
-                message: abi.encode(requestInfo, stakeholder, msg.sender)
+                message: abi.encode(requestInfo, msg.sender)
             })
         );
-        // ensure msg.sender is right, make proxy whitelist per stake or something to keep things permissionless/trustless
+
         emit RandomWordsRequested({
             requestID: nonce,
             requester: msg.sender,
@@ -123,28 +122,30 @@ contract VRFProxy is IVRFProxy, TeleporterOwnerUpgradeable {
         override
     {
         // Verify the sender.
-        require(sourceBlockchainID == vrfProviderBlockchainID, "VRFProxy: invalid source blockchain ID");
-        require(originSenderAddress == vrfProviderAddress, "VRFProxy: invalid origin sender address");
+        if (sourceBlockchainID != vrfProviderBlockchainID) revert InvalidSourceBlockchainID();
+        if (originSenderAddress != vrfProviderAddress) revert CallerNotVRFProvider();
 
         // Decode the response.
         VRFResponseInfo memory response = abi.decode(message, (VRFResponseInfo));
+        // gas opt
+        uint256 requestID = response.requestID;
 
         // Look up the requester.
-        address requester = requesters[response.requestID];
-        require(requester != address(0), "VRFProxy: invalid requester");
+        address requester = requesters[requestID];
+        if (requester == address(0)) revert InvalidRequestID();
 
         // Clear the requesting address since the request is now fulfilled.
-        delete requesters[response.requestID];
+        delete requesters[requestID];
 
         // Pass the result to the destination with the exact gas limit.
         bytes memory resp =
-            abi.encodeWithSelector(VRFV2WrapperConsumerBase.rawFulfillRandomWords.selector, response.requestID, response.randomWords);
+            abi.encodeWithSelector(VRFV2WrapperConsumerBase.rawFulfillRandomWords.selector, requestID, response.randomWords);
 
         // Call with explicitly the amount of callback gas requested.
         // Note that _callWithExactGas will revert if we do not have sufficient gas
         // to give the callee their requested amount.
         bool success = GasUtils._callWithExactGas(response.callbackGasLimit, requester, resp);
-        emit RandomWordsFulfilled(response.requestID, success);
+        emit RandomWordsFulfilled(requestID, success);
     }
 
 }
