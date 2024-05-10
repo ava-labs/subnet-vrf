@@ -4,7 +4,6 @@ pragma solidity 0.8.18;
 import {IVRF} from "./IVRF.sol";
 
 interface IVRFProvider is IVRF {
-
     error InsufficientBalance();
     error ConsumerNotApprovedBySelectedStakeholder();
     error CallerIsNotAnApprovedProxy();
@@ -48,7 +47,13 @@ interface IVRFProvider is IVRF {
      * the random value request. Separate from the proxy request ID.
      * @param numWords - The number of random uint256 words requested.
      */
-    event VRFRequestReceived(bytes32 blockchainID, address sourceSender, uint256 indexed proxyRequestID, uint256 indexed chainlinkVRFRequestID, uint32 numWords);
+    event VRFRequestReceived(
+        bytes32 blockchainID,
+        address sourceSender,
+        uint256 indexed proxyRequestID,
+        uint256 indexed chainlinkVRFRequestID,
+        uint32 numWords
+    );
 
     /**
      * @dev Emitted when a VRF request is fulfilled by the Chainlink VRF Coordinator, and the random

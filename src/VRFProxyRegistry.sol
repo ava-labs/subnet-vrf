@@ -5,15 +5,11 @@ import {IVRFProxyRegistry} from "./interfaces/IVRFProxyRegistry.sol";
 import {AccessControl} from "@openzeppelin/contracts@4.8.1/access/AccessControl.sol";
 
 contract VRFProxyRegistry is IVRFProxyRegistry, AccessControl {
-
     mapping(bytes32 blockchainID => mapping(address proxy => bool approved)) public isValid;
 
     bytes32 public constant PROXY_MANAGER = keccak256("PROXY_MANAGER");
 
-    constructor(
-        address admin,
-        address[] memory proxyManagers
-    ) {
+    constructor(address admin, address[] memory proxyManagers) {
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
         _grantRole(PROXY_MANAGER, admin);
         uint256 length = proxyManagers.length; // gas opt

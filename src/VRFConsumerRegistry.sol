@@ -5,15 +5,11 @@ import {IVRFConsumerRegistry} from "./interfaces/IVRFConsumerRegistry.sol";
 import {AccessControl} from "@openzeppelin/contracts@4.8.1/access/AccessControl.sol";
 
 contract VRFConsumerRegistry is IVRFConsumerRegistry, AccessControl {
-
     mapping(address consumer => bool approved) public isValid;
 
     bytes32 public constant CONSUMER_MANAGER = keccak256("CONSUMER_MANAGER");
 
-    constructor(
-        address admin,
-        address[] memory consumerManagers
-    ) {
+    constructor(address admin, address[] memory consumerManagers) {
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
         _grantRole(CONSUMER_MANAGER, admin);
         uint256 length = consumerManagers.length; // gas opt

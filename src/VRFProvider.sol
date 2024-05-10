@@ -11,7 +11,6 @@ import {TeleporterOwnerUpgradeable} from "@teleporter/contracts/src/Teleporter/u
 import {LinkTokenInterface} from "@chainlink/contracts/src/v0.8/shared/interfaces/LinkTokenInterface.sol";
 
 contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerUpgradeable {
-
     /**
      * @dev Variable containing the $LINK balance, deposited by the official authorities.
      */
@@ -81,10 +80,7 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
      */
     // Need to provide an implementation of fulfillRandomWords (without a leading "_") for VRFConsumerBaseV2
     // solhint-disable-next-line
-    function fulfillRandomWords(uint256 chainlinkVRFRequestID, uint256[] memory randomWords)
-        internal
-        override
-    {
+    function fulfillRandomWords(uint256 chainlinkVRFRequestID, uint256[] memory randomWords) internal override {
         // Look up the corresponding VRFProxy request info for this chainlinkVRFRequestID to know
         // the correct data to include in the response.
         InternalRequestInfo memory requestInfo = _requests[chainlinkVRFRequestID];
@@ -138,26 +134,23 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
         // Ensure that stakeholder has enough balance
         if (total > balance) revert InsufficientBalance();
         unchecked {
-             balance -= total;
+            balance -= total;
         }
 
         emit Payment(originSenderAddress, proxyRequestID, total);
 
         // Pass the request on the Chainlink VRF coordinator
-        uint256 chainlinkVRFRequestID = requestRandomness(
-            total,
-            request.minimumRequestConfirmations,
-            numWords
+        uint256 chainlinkVRFRequestID = requestRandomness(total, request.minimumRequestConfirmations, numWords);
+
+        emit VRFRequestReceived(
+            sourceBlockchainID, originSenderAddress, proxyRequestID, chainlinkVRFRequestID, numWords
         );
 
-        emit VRFRequestReceived(sourceBlockchainID, originSenderAddress, proxyRequestID, chainlinkVRFRequestID, numWords);
-
-        _requests[chainlinkVRFRequestID] =
-            InternalRequestInfo({
-                sourceBlockchainID: sourceBlockchainID,
-                originSenderAddress: originSenderAddress,
-                proxyRequestID: proxyRequestID,
-                messageCallbackGasLimit: request.callbackGasLimit
-            });
+        _requests[chainlinkVRFRequestID] = InternalRequestInfo({
+            sourceBlockchainID: sourceBlockchainID,
+            originSenderAddress: originSenderAddress,
+            proxyRequestID: proxyRequestID,
+            messageCallbackGasLimit: request.callbackGasLimit
+        });
     }
 }

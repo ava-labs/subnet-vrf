@@ -42,9 +42,12 @@ contract VRFProxy is IVRFProxy, TeleporterOwnerUpgradeable {
      */
     mapping(uint256 requestID => address requester) public requesters;
 
-    constructor(address teleporterRegistryAddress_, address vrfConsumerRegistry_, bytes32 vrfProviderBlockchainID_, address vrfProviderAddress_)
-        TeleporterOwnerUpgradeable(teleporterRegistryAddress_, msg.sender)
-    {
+    constructor(
+        address teleporterRegistryAddress_,
+        address vrfConsumerRegistry_,
+        bytes32 vrfProviderBlockchainID_,
+        address vrfProviderAddress_
+    ) TeleporterOwnerUpgradeable(teleporterRegistryAddress_, msg.sender) {
         if (vrfProviderAddress_ == address(0)) revert VRFProviderAddressIsZero();
         vrfProviderAddress = vrfProviderAddress_;
         if (vrfConsumerRegistry_ == address(0)) revert VRFConsumerRegistryAddressIsZero();
@@ -65,11 +68,10 @@ contract VRFProxy is IVRFProxy, TeleporterOwnerUpgradeable {
      * @return requestID - A unique identifier of the request. Can be used to match a request to a reponse in fulfillRandomWords. This
      * request ID is separate from any VRF request ID assigned on the partner chain by the VRFProdiver.
      */
-    function requestRandomWords(
-        uint16 minimumRequestConfirmations,
-        uint32 callbackGasLimit,
-        uint32 numWords
-    ) external returns (uint256) {
+    function requestRandomWords(uint16 minimumRequestConfirmations, uint32 callbackGasLimit, uint32 numWords)
+        external
+        returns (uint256)
+    {
         if (!vrfConsumerRegistry.isValid(msg.sender)) revert CallerIsNotAnApprovedConsumer();
         // Assign the next nonce to be used at the request ID.
         uint256 nonce = ++requestNonce;
@@ -138,8 +140,9 @@ contract VRFProxy is IVRFProxy, TeleporterOwnerUpgradeable {
         delete requesters[requestID];
 
         // Pass the result to the destination with the exact gas limit.
-        bytes memory resp =
-            abi.encodeWithSelector(VRFV2WrapperConsumerBase.rawFulfillRandomWords.selector, requestID, response.randomWords);
+        bytes memory resp = abi.encodeWithSelector(
+            VRFV2WrapperConsumerBase.rawFulfillRandomWords.selector, requestID, response.randomWords
+        );
 
         // Call with explicitly the amount of callback gas requested.
         // Note that _callWithExactGas will revert if we do not have sufficient gas
@@ -147,5 +150,4 @@ contract VRFProxy is IVRFProxy, TeleporterOwnerUpgradeable {
         bool success = GasUtils._callWithExactGas(response.callbackGasLimit, requester, resp);
         emit RandomWordsFulfilled(requestID, success);
     }
-
 }
