@@ -4,6 +4,10 @@ pragma solidity 0.8.18;
 import {IVRF} from "./IVRF.sol";
 
 interface IVRFProxy is IVRF {
+
+    /**
+     * Errors
+     */
     error VRFProviderAddressIsZero();
     error VRFConsumerRegistryAddressIsZero();
     error VRFProviderBlockchainIDIsZero();

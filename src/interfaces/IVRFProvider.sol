@@ -4,6 +4,10 @@ pragma solidity 0.8.18;
 import {IVRF} from "./IVRF.sol";
 
 interface IVRFProvider is IVRF {
+
+    /**
+     * Errors
+     */
     error InsufficientBalance();
     error ConsumerNotApprovedBySelectedStakeholder();
     error CallerIsNotAnApprovedProxy();
