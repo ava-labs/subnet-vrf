@@ -2,19 +2,21 @@
 pragma solidity 0.8.18;
 
 import {Test} from "forge-std/Test.sol";
-import {VRFProxy, VRFRequestInfo, VRFResponseInfo} from "../src/VRFProxy.sol";
-import {VRFConsumerRegistry} from "../src/VRFConsumerRegistry.sol";
+import {VRFProxy} from "../VRFProxy.sol";
+import {IVRF} from "../interfaces/IVRF.sol";
+import {VRFConsumerRegistry} from "../VRFConsumerRegistry.sol";
 import {TeleporterRegistry} from "@teleporter/contracts/src/Teleporter/upgrades/TeleporterRegistry.sol";
 import {
     ITeleporterMessenger,
     TeleporterMessageInput,
     TeleporterFeeInfo
 } from "@teleporter/contracts/src/Teleporter/ITeleporterMessenger.sol";
-import {VRFConsumer} from "../src/mocks/VRFConsumer.sol";
+import {VRFConsumer} from "../mocks/VRFConsumer.sol";
 
-contract VRFProxyTest is Test {
+contract VRFProxyTest is IVRF, Test {
     address public immutable ADMIN;
-    address[] public immutable MANAGERS;
+    address[] public MANAGERS;
+    address[] public consumers;
 
     address public constant MOCK_TELEPOTER_MESSENGER_ADDRESS = address(0x1111);
     uint256 public constant MOCK_LATEST_TELEPORTER_VERSION = 1;
@@ -44,7 +46,9 @@ contract VRFProxyTest is Test {
 
     constructor() {
         ADMIN = msg.sender;
-        MANAGERS.push(msg.sender);
+        MANAGERS = new address[](1);
+        MANAGERS[0] = msg.sender;
+        consumers = new address[](1);
     }
 
     function setUp() public virtual {
@@ -72,7 +76,7 @@ contract VRFProxyTest is Test {
         );
         vrfProxy = new VRFProxy(
             MOCK_TELEPORTER_REGISTRY_ADDRESS,
-            vrfConsumerRegistry,
+            address(vrfConsumerRegistry),
             MOCK_VRF_PROVIDER_BLOCKCHAIN_ID,
             MOCK_VRF_PROVIDER_ADDRESS
         );
@@ -85,7 +89,8 @@ contract VRFProxyTest is Test {
 
     function testAddConsumerZeroAddress() public {
         vm.expectRevert("VRFProxy: zero consumer address");
-        proxy.addConsumer(address(0));
+        consumers[0] = address(0);
+        vrfConsumerRegistry.addConsumers(consumers);
     }
 
     function testAddConsumerNotOwner() public {
@@ -93,14 +98,15 @@ contract VRFProxyTest is Test {
         address nonOwnerAddress = address(0x6666);
         vm.expectRevert("Ownable: caller is not the owner");
         vm.prank(nonOwnerAddress);
-        proxy.addConsumer(mockConsumer);
+        consumers[0] = mockConsumer;
+        vrfConsumerRegistry.addConsumers(consumers);
     }
 
     function addConsumerAlreadyAdded() public {
         address mockConsumer = address(0x5555);
         _addConsumer(mockConsumer);
-        proxy.addConsumer(mockConsumer);
-        assertTrue(proxy.allowedConsumers(mockConsumer));
+        vrfConsumerRegistry.addConsumer(mockConsumer);
+        assertTrue(vrfProxy.allowedConsumers(mockConsumer));
     }
 
     function testRemoveConsumerSuccess() public {
@@ -109,17 +115,17 @@ contract VRFProxyTest is Test {
         _addConsumer(mockConsumer);
 
         // Remove the consumer.
-        vm.expectEmit(true, true, true, true, address(proxy));
+        vm.expectEmit(true, true, true, true, address(vrfProxy));
         emit ConsumerRemoved(mockConsumer);
-        proxy.removeConsumer(mockConsumer);
-        assertFalse(proxy.allowedConsumers(mockConsumer));
+        vrfConsumerRegistry.removeConsumer(mockConsumer);
+        assertFalse(vrfProxy.allowedConsumers(mockConsumer));
     }
 
     function testRemoveConsumerNotFound() public {
         // Try to remove the consumer that was never added.
         address mockConsumer = address(0x5555);
         vm.expectRevert("VRFProxy: invalid consumer");
-        proxy.removeConsumer(mockConsumer);
+        vrfConsumerRegistry.removeConsumer(mockConsumer);
     }
 
     function testRemoveConsumerNotOwner() public {
@@ -127,7 +133,7 @@ contract VRFProxyTest is Test {
         address nonOwnerAddress = address(0x6666);
         vm.expectRevert("Ownable: caller is not the owner");
         vm.prank(nonOwnerAddress);
-        proxy.removeConsumer(mockConsumer);
+        vrfConsumerRegistry.removeConsumer(mockConsumer);
     }
 
     function testRequestRandomWordsSuccess() public {
@@ -135,7 +141,7 @@ contract VRFProxyTest is Test {
         _addConsumer(address(this));
 
         // Submit a request.
-        uint256 expectedRequestID = proxy.requestNonce() + 1;
+        uint256 expectedRequestID = vrfProxy.requestNonce() + 1;
         uint16 mockMinConfs = 1;
         uint32 mockCallbackGasLimit = 213_000;
         uint32 mockNumWords = 20;
@@ -160,13 +166,13 @@ contract VRFProxyTest is Test {
                     destinationBlockchainID: MOCK_VRF_PROVIDER_BLOCKCHAIN_ID,
                     destinationAddress: MOCK_VRF_PROVIDER_ADDRESS,
                     feeInfo: TeleporterFeeInfo({feeTokenAddress: address(0), amount: 0}),
-                    requiredGasLimit: proxy.VRF_REQUEST_REQUIRED_GAS(),
+                    requiredGasLimit: vrfProxy.VRF_REQUEST_REQUIRED_GAS(),
                     allowedRelayerAddresses: new address[](0),
                     message: abi.encode(expectedRequest)
                 })
             )
         );
-        vm.expectEmit(true, true, true, true, address(proxy));
+        vm.expectEmit(true, true, true, true, address(vrfProxy));
         emit RandomWordsRequested({
             requestID: expectedRequestID,
             requester: address(this),
@@ -177,13 +183,13 @@ contract VRFProxyTest is Test {
             numWords: mockNumWords
         });
         uint256 requestID =
-            proxy.requestRandomWords(MOCK_KEY_HASH, MOCK_SUB_ID, mockMinConfs, mockCallbackGasLimit, mockNumWords);
+            vrfProxy.requestRandomWords(MOCK_KEY_HASH, MOCK_SUB_ID, mockMinConfs, mockCallbackGasLimit, mockNumWords);
         assertEq(requestID, expectedRequestID);
     }
 
     function testRequestRandomWordsNotAllowedConsumer() public {
         vm.expectRevert("VRFProxy: unauthorized consumer");
-        proxy.requestRandomWords(MOCK_KEY_HASH, MOCK_SUB_ID, 1, 200_000, 1);
+        vrfProxy.requestRandomWords(MOCK_KEY_HASH, MOCK_SUB_ID, 1, 200_000, 1);
     }
 
     function testReceiveTeleporterMessageSuccess() public {
@@ -196,7 +202,7 @@ contract VRFProxyTest is Test {
         mockValues[0] = 321;
         VRFResponseInfo memory response =
             VRFResponseInfo({requestID: requestID, randomWords: mockValues, callbackGasLimit: callbackGasLimit});
-        SimpleBettingGame consumer;
+        VRFConsumer consumer;
         vm.mockCall(
             MOCK_CONSUMER,
             abi.encodeWithSelector(consumer.rawFulfillRandomWords.selector, requestID, mockValues),
@@ -208,10 +214,10 @@ contract VRFProxyTest is Test {
             callbackGasLimit,
             abi.encodeWithSelector(consumer.rawFulfillRandomWords.selector, requestID, mockValues)
         );
-        vm.expectEmit(true, true, true, true, address(proxy));
+        vm.expectEmit(true, true, true, true, address(vrfProxy));
         emit RandomWordsFulfilled(requestID, true);
         vm.prank(MOCK_TELEPOTER_MESSENGER_ADDRESS);
-        proxy.receiveTeleporterMessage(MOCK_VRF_PROVIDER_BLOCKCHAIN_ID, MOCK_VRF_PROVIDER_ADDRESS, abi.encode(response));
+        vrfProxy.receiveTeleporterMessage(MOCK_VRF_PROVIDER_BLOCKCHAIN_ID, MOCK_VRF_PROVIDER_ADDRESS, abi.encode(response));
     }
 
     function testReceiveTeleporterMessageSuccessCallReverts() public {
@@ -226,7 +232,7 @@ contract VRFProxyTest is Test {
             VRFResponseInfo({requestID: requestID, randomWords: mockValues, callbackGasLimit: callbackGasLimit});
 
         // Mock the consumer reverting in the call to rawFulfillRandomWords
-        SimpleBettingGame consumer;
+        VRFConsumer consumer;
         vm.mockCall(MOCK_CONSUMER, abi.encodeWithSelector(consumer.rawFulfillRandomWords.selector), new bytes(0));
         vm.mockCallRevert(
             MOCK_CONSUMER,
@@ -239,24 +245,24 @@ contract VRFProxyTest is Test {
             callbackGasLimit,
             abi.encodeWithSelector(consumer.rawFulfillRandomWords.selector, requestID, mockValues)
         );
-        vm.expectEmit(true, true, true, true, address(proxy));
+        vm.expectEmit(true, true, true, true, address(vrfProxy));
         emit RandomWordsFulfilled(requestID, false);
         vm.prank(MOCK_TELEPOTER_MESSENGER_ADDRESS);
-        proxy.receiveTeleporterMessage(MOCK_VRF_PROVIDER_BLOCKCHAIN_ID, MOCK_VRF_PROVIDER_ADDRESS, abi.encode(response));
+        vrfProxy.receiveTeleporterMessage(MOCK_VRF_PROVIDER_BLOCKCHAIN_ID, MOCK_VRF_PROVIDER_ADDRESS, abi.encode(response));
     }
 
     function testReceiveTeleporterMessageInvalidBlockchainID() public {
         bytes32 otherBlockchainID = bytes32(hex"deaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddead");
         vm.expectRevert("VRFProxy: invalid source blockchain ID");
         vm.prank(MOCK_TELEPOTER_MESSENGER_ADDRESS);
-        proxy.receiveTeleporterMessage(otherBlockchainID, MOCK_VRF_PROVIDER_ADDRESS, new bytes(0));
+        vrfProxy.receiveTeleporterMessage(otherBlockchainID, MOCK_VRF_PROVIDER_ADDRESS, new bytes(0));
     }
 
     function testReceiveTeleporterMessageInvalidAddress() public {
         address otherAddress = address(0xbeef);
         vm.expectRevert("VRFProxy: invalid origin sender address");
         vm.prank(MOCK_TELEPOTER_MESSENGER_ADDRESS);
-        proxy.receiveTeleporterMessage(MOCK_VRF_PROVIDER_BLOCKCHAIN_ID, otherAddress, new bytes(0));
+        vrfProxy.receiveTeleporterMessage(MOCK_VRF_PROVIDER_BLOCKCHAIN_ID, otherAddress, new bytes(0));
     }
 
     function testReceiveTeleporterMessageInvalidRequester() public {
@@ -266,7 +272,7 @@ contract VRFProxyTest is Test {
 
         vm.expectRevert("VRFProxy: invalid requester");
         vm.prank(MOCK_TELEPOTER_MESSENGER_ADDRESS);
-        proxy.receiveTeleporterMessage(MOCK_VRF_PROVIDER_BLOCKCHAIN_ID, MOCK_VRF_PROVIDER_ADDRESS, abi.encode(response));
+        vrfProxy.receiveTeleporterMessage(MOCK_VRF_PROVIDER_BLOCKCHAIN_ID, MOCK_VRF_PROVIDER_ADDRESS, abi.encode(response));
     }
 
     function testReceiveTeleporterMessageInsufficientGasForCheck() public {
@@ -281,7 +287,7 @@ contract VRFProxyTest is Test {
         // Expect it to revert if the call to receiveTeleporterMessage doesn't have sufficient gas for GAS_FOR_CALL_EXACT_CHECK.
         // 15,000 is just enough gas to reach the _callWithExactGas call with less than 5,000 gas remaining.
         uint32 gasInsufficientForCheck = 15_000;
-        SimpleBettingGame consumer;
+        VRFConsumer consumer;
         vm.mockCall(
             MOCK_CONSUMER,
             abi.encodeWithSelector(consumer.rawFulfillRandomWords.selector, requestID, new uint256[](1)),
@@ -290,7 +296,7 @@ contract VRFProxyTest is Test {
         vm.etch(MOCK_CONSUMER, new bytes(10));
         vm.expectRevert();
         vm.prank(MOCK_TELEPOTER_MESSENGER_ADDRESS);
-        proxy.receiveTeleporterMessage{gas: gasInsufficientForCheck}(
+        vrfProxy.receiveTeleporterMessage{gas: gasInsufficientForCheck}(
             MOCK_VRF_PROVIDER_BLOCKCHAIN_ID, MOCK_VRF_PROVIDER_ADDRESS, abi.encode(response)
         );
     }
@@ -305,7 +311,7 @@ contract VRFProxyTest is Test {
             VRFResponseInfo({requestID: requestID, randomWords: new uint256[](1), callbackGasLimit: callbackGasLimit});
 
         // Expect it to revert if the call to receiveTeleporterMessage doesn't have sufficient gas for the callback gas limit.
-        SimpleBettingGame consumer;
+        VRFConsumer consumer;
         vm.mockCall(
             MOCK_CONSUMER,
             abi.encodeWithSelector(consumer.rawFulfillRandomWords.selector, requestID, new uint256[](1)),
@@ -313,7 +319,7 @@ contract VRFProxyTest is Test {
         );
         vm.expectRevert();
         vm.prank(MOCK_TELEPOTER_MESSENGER_ADDRESS);
-        proxy.receiveTeleporterMessage{gas: callbackGasLimit - 1}(
+        vrfProxy.receiveTeleporterMessage{gas: callbackGasLimit - 1}(
             MOCK_VRF_PROVIDER_BLOCKCHAIN_ID, MOCK_VRF_PROVIDER_ADDRESS, abi.encode(response)
         );
     }
@@ -333,14 +339,14 @@ contract VRFProxyTest is Test {
         // Expect it to revert.
         vm.expectRevert();
         vm.prank(MOCK_TELEPOTER_MESSENGER_ADDRESS);
-        proxy.receiveTeleporterMessage(MOCK_VRF_PROVIDER_BLOCKCHAIN_ID, MOCK_VRF_PROVIDER_ADDRESS, abi.encode(response));
+        vrfProxy.receiveTeleporterMessage(MOCK_VRF_PROVIDER_BLOCKCHAIN_ID, MOCK_VRF_PROVIDER_ADDRESS, abi.encode(response));
     }
 
     function _addConsumer(address consumer) internal {
-        vm.expectEmit(true, true, true, true, address(proxy));
+        vm.expectEmit(true, true, true, true, address(vrfProxy));
         emit ConsumerAdded(consumer);
-        proxy.addConsumer(consumer);
-        assertTrue(proxy.allowedConsumers(consumer));
+        vrfProxy.addConsumer(consumer);
+        assertTrue(vrfProxy.allowedConsumers(consumer));
     }
 
     function _makeRandomWordsRequest(address requester, uint32 callbackGasLimit) internal returns (uint256) {
@@ -351,6 +357,6 @@ contract VRFProxyTest is Test {
             abi.encode(bytes32(0))
         );
         vm.prank(requester);
-        return proxy.requestRandomWords(MOCK_KEY_HASH, MOCK_SUB_ID, 1, callbackGasLimit, 1);
+        return vrfProxy.requestRandomWords(MOCK_KEY_HASH, MOCK_SUB_ID, 1, callbackGasLimit, 1);
     }
 }
