@@ -33,9 +33,13 @@ vrf_provider_address=$(parseComputedContractAddress "$computed_provider_contract
 computed_consumer_registry_contract_address=$(cast compute-address $user_address --rpc-url $subnet_url)
 vrf_consumer_registry_address=$(parseComputedContractAddress "$computed_proxy_contract_address")
 
-# Compute VRFProxy address
+# Compute VRFProxy address Subnet address.
 computed_proxy_contract_address=$(cast compute-address $user_address --nonce ((++subnet_nonce)) --rpc-url $subnet_url)
 vrf_proxy_address=$(parseComputedContractAddress "$computed_proxy_contract_address")
+
+# Compute VRFConsumer (mock) address Subnet address.
+computed_consumer_contract_address=$(cast compute-address $user_address --nonce ((++subnet_nonce)) --rpc-url $subnet_url)
+vrf_consumer_mock_address=$(parseComputedContractAddress "$computed_proxy_contract_address")
 
 cd $REPO_BASE_PATH/contracts
 
@@ -71,11 +75,10 @@ forge create --private-key $user_private_key \
     --rpc-url $subnet_url > /dev/null
 echo "Deployed VRFProxy to Subnet: $vrf_proxy_address."
 
-# Deploy the SimpleBettingGame on the Subnet.
-#echo "Deploying SimpleBettingGame to Subnet..."
-#simple_betting_game_deploy_result=$(forge create --private-key $user_private_key \
-#  src/SimpleBettingGame.sol:SimpleBettingGame \
-#  --constructor-args $vrf_proxy_address $c_chain_vrf_subscription_id $c_chain_vrf_key_hash \
-#  --rpc-url $subnet_url)
-#simple_betting_game_address=$(parseContractAddress "$simple_betting_game_deploy_result")
-#echo "Deployed SimpleBettingGame to Subnet."
+# Deploy the VRFConsumer (mock) on the Subnet.
+echo "Deploying VRFConsumer to Subnet..."
+forge create --private-key $user_private_key \
+  src/mocks/VRFConsumer.sol:VRFConsumer \
+  --constructor-args $vrf_proxy_address \
+  --rpc-url $subnet_url > /dev/null
+echo "Deployed VRFConsumer to Subnet: $vrf_consumer_mock_address."
