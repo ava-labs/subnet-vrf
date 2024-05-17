@@ -2,7 +2,6 @@
 pragma solidity 0.8.18;
 
 interface IVRFConsumerRegistry {
-
     /**
      * @dev Emitted when a new consumer is added.
      */
