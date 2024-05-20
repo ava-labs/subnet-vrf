@@ -39,6 +39,7 @@ abstract contract ERC677Token is ERC20 {
 
   function isContract(address _addr)
     private
+    view
     returns (bool hasCode)
   {
     uint length;
