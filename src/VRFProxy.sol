@@ -3,6 +3,7 @@ pragma solidity 0.8.18;
 
 import {IVRFConsumerRegistry} from "./interfaces/IVRFConsumerRegistry.sol";
 import {IVRFProxy} from "./interfaces/IVRFProxy.sol";
+import {VRFRequestInfo, VRFResponseInfo} from "./interfaces/IVRF.sol";
 import {GasUtils} from "./libraries/GasUtils.sol";
 import {
     TeleporterMessageInput, TeleporterFeeInfo

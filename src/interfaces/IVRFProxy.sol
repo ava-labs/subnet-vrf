@@ -1,9 +1,7 @@
 // SPDX-License-IDentifier: UNLICENSED
 pragma solidity 0.8.18;
 
-import {IVRF} from "./IVRF.sol";
-
-interface IVRFProxy is IVRF {
+interface IVRFProxy {
     /**
      * Errors
      */

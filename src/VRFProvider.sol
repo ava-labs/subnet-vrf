@@ -2,6 +2,7 @@
 pragma solidity 0.8.18;
 
 import {IVRFProvider} from "./interfaces/IVRFProvider.sol";
+import {VRFRequestInfo, VRFResponseInfo} from "./interfaces/IVRF.sol";
 import {IVRFProxyRegistry} from "./interfaces/IVRFProxyRegistry.sol";
 import {VRFV2WrapperConsumerBase} from "@chainlink/contracts/src/v0.8/vrf/VRFV2WrapperConsumerBase.sol";
 import {

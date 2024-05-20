@@ -1,9 +1,9 @@
-// SPDX-License-Identifier: Ecosystem
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.18;
 
 import {Test} from "forge-std/Test.sol";
 import {VRFProxy, IVRFProxy} from "../VRFProxy.sol";
-import {IVRF} from "../interfaces/IVRF.sol";
+import {VRFRequestInfo, VRFResponseInfo} from "../interfaces/IVRF.sol";
 import {VRFConsumerRegistry} from "../VRFConsumerRegistry.sol";
 import {TeleporterRegistry} from "@teleporter/contracts/src/Teleporter/upgrades/TeleporterRegistry.sol";
 import {
@@ -14,7 +14,7 @@ import {
 import {VRFConsumer} from "../mocks/VRFConsumer.sol";
 import {Strings} from "@openzeppelin/contracts@4.8.1/utils/Strings.sol";
 
-contract VRFProxyTest is IVRF, Test {
+contract VRFProxyTest is Test {
     address public ADMIN;
     address[] public MANAGERS;
     address[] public consumers;
@@ -147,7 +147,7 @@ contract VRFProxyTest is IVRF, Test {
             abi.encodeWithSelector(ITeleporterMessenger.sendCrossChainMessage.selector),
             abi.encode(bytes32(0))
         );
-        IVRF.VRFRequestInfo memory expectedRequest = IVRF.VRFRequestInfo({
+        VRFRequestInfo memory expectedRequest = VRFRequestInfo({
             requestID: expectedRequestID,
             minimumRequestConfirmations: mockMinConfs,
             callbackGasLimit: mockCallbackGasLimit,
