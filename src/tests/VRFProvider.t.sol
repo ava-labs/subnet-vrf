@@ -88,7 +88,7 @@ contract VRFProviderTest is Test {
 
     function testReceiveTeleporterMessageInvalidSourceBlockchainID() public {
         vm.prank(MOCK_TELEPOTER_MESSENGER_ADDRESS);
-        vm.expectRevert("VRFProvider: invalid source blockchain ID");
+        vm.expectRevert(IVRFProvider.CallerIsNotAnApprovedProxy.selector);
         bytes32 otherBlockchainID = bytes32(hex"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
         provider.receiveTeleporterMessage(
             otherBlockchainID, MOCK_VRF_PROXY_ADDRESS, abi.encode(_getMockVRFRequestInfo())
@@ -97,7 +97,7 @@ contract VRFProviderTest is Test {
 
     function testReceiveTeleporterMessageInvalidProxyAddress() public {
         vm.prank(MOCK_TELEPOTER_MESSENGER_ADDRESS);
-        vm.expectRevert("VRFProvider: invalid origin sender address");
+        vm.expectRevert(IVRFProvider.CallerIsNotAnApprovedProxy.selector);
         address otherProxyAddress = address(0x5555);
         provider.receiveTeleporterMessage(
             MOCK_VRF_PROXY_BLOCKCHAIN_ID, otherProxyAddress, abi.encode(_getMockVRFRequestInfo())
@@ -108,7 +108,7 @@ contract VRFProviderTest is Test {
         VRFRequestInfo memory mockRequestInfo = _getMockVRFRequestInfo();
         mockRequestInfo.requestID = 0;
         vm.prank(MOCK_TELEPOTER_MESSENGER_ADDRESS);
-        vm.expectRevert("VRFProvider: invalid proxy request ID");
+        vm.expectRevert(IVRFProvider.InvalidProxyRequestID.selector);
         provider.receiveTeleporterMessage(
             MOCK_VRF_PROXY_BLOCKCHAIN_ID, MOCK_VRF_PROXY_ADDRESS, abi.encode(mockRequestInfo)
         );
