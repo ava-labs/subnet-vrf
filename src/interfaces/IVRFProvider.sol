@@ -61,8 +61,7 @@ interface IVRFProvider {
      * Errors
      */
     error InsufficientBalance();
-    error ConsumerNotApprovedBySelectedStakeholder();
-    error CallerIsNotAnApprovedProxy();
+    error InvalidCallerOrSourceChainID();
     error VRFProxyRegistryAddressIsZero();
     error InvalidProxyRequestID();
     error InvalidChainlinkVRFRequestID();

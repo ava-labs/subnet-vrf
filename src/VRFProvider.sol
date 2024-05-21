@@ -120,7 +120,7 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
         internal
         override
     {
-        if (!vrfProxyRegistry.isValid(sourceBlockchainID, originSenderAddress)) revert CallerIsNotAnApprovedProxy();
+        if (!vrfProxyRegistry.isValid(sourceBlockchainID, originSenderAddress)) revert InvalidCallerOrSourceChainID();
 
         // Decode the request.
         (VRFRequestInfo memory request) = abi.decode(message, (VRFRequestInfo));
