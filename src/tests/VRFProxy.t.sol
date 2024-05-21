@@ -15,8 +15,8 @@ import {VRFConsumer} from "../mocks/VRFConsumer.sol";
 import {Strings} from "@openzeppelin/contracts@4.8.1/utils/Strings.sol";
 
 contract VRFProxyTest is Test {
-    address public ADMIN;
-    address[] public MANAGERS;
+
+    address[] public managers;
     address[] public consumers;
 
     /**
@@ -51,8 +51,8 @@ contract VRFProxyTest is Test {
     event RandomWordsFulfilled(uint256 indexed requestID, bool success);
 
     function setUp() public virtual {
-        MANAGERS = new address[](1);
-        MANAGERS[0] = address(this);
+        managers = new address[](1);
+        managers[0] = address(this);
         consumers = new address[](1);
 
         vm.mockCall(
@@ -73,7 +73,7 @@ contract VRFProxyTest is Test {
             ),
             abi.encode(MOCK_LATEST_TELEPORTER_VERSION)
         );
-        vrfConsumerRegistry = new VRFConsumerRegistry(address(this), MANAGERS);
+        vrfConsumerRegistry = new VRFConsumerRegistry(address(this), managers);
         vrfProxy = new VRFProxy(
             MOCK_TELEPORTER_REGISTRY_ADDRESS,
             address(vrfConsumerRegistry),
