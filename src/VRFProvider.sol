@@ -17,6 +17,11 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
     uint256 public balance;
 
     /**
+     * @dev Mapping which tracks the authorized funders
+     */
+    mapping(address account => bool isAllowedToDeposit) public authorizedFunders;
+
+    /**
      * @dev Variable containing the VRF Proxy Registry, contract used for management of proxies.
      */
     IVRFProxyRegistry public vrfProxyRegistry;
@@ -48,9 +53,38 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
     }
 
     /**
+     * @dev Function to add authorized funders
+     */
+    function addFunders(address[] calldata funders) external onlyOwner {
+        uint256 length = funders.length; // gas opt
+        for (uint256 i; i < length; i++) {
+            address funder = funders[i];
+            if (!authorizedFunders[funder] && funder != address(0)) {
+                authorizedFunders[funder] = true;
+                emit FunderAdded(funder);
+            }
+        }
+    }
+
+    /**
+     * @dev Function to remove authorized funders
+     */
+    function removeFunders(address[] calldata funders) external onlyOwner {
+        uint256 length = funders.length; // gas opt
+        for (uint256 i; i < length; i++) {
+            address funder = funders[i];
+            if (authorizedFunders[funder] && funder != address(0)) {
+                delete authorizedFunders[funder];
+                emit FunderRemoved(funder);
+            }
+        }
+    }
+
+    /**
      * @dev Enables stakeholders to deposit $LINK
      */
-    function deposit(uint256 amount) external onlyOwner {
+    function deposit(uint256 amount) external {
+        if (!authorizedFunders[msg.sender] && msg.sender != owner()) revert NotAnAuthorizedFunder();
         LINK.transferFrom(msg.sender, address(this), amount);
         unchecked {
             balance += amount;

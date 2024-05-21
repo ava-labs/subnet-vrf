@@ -16,6 +16,16 @@ interface IVRFProvider {
     }
 
     /**
+     * @dev Emitted when a new authorized funder is added.
+     */
+    event FunderAdded(address indexed funder);
+
+    /**
+     * @dev Emitted when an authorized funder is removed.
+     */
+    event FunderRemoved(address indexed funder);
+
+    /**
      * @dev Emitted when $LINK is deposited to the contract.
      */
     event Deposit(uint256 amount);
@@ -60,9 +70,10 @@ interface IVRFProvider {
     /**
      * Errors
      */
+    error NotAnAuthorizedFunder();
     error InsufficientBalance();
     error InvalidCallerOrSourceChainID();
-    error VRFProxyRegistryAddressIsZero();
     error InvalidProxyRequestID();
     error InvalidChainlinkVRFRequestID();
+    error VRFProxyRegistryAddressIsZero();
 }
