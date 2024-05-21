@@ -33,6 +33,7 @@ contract VRFProviderTest is Test {
     uint32 public constant TELEPORTER_CALLBACK_GAS_LIMIT_BASE = 300_000;
     uint32 public constant TELEPORTER_CALLBACK_GAS_LIMIT_PER_WORD = 5_000;
     // Event emitted by VRFProvider
+
     event VRFRequestReceived(
         bytes32 blockchainID,
         address sourceSender,
@@ -47,7 +48,7 @@ contract VRFProviderTest is Test {
         managers = new address[](1);
         managers[0] = address(this);
         proxies = new address[](1);
-        proxies[0] = MOCK_VRF_PROXY_ADDRESS; 
+        proxies[0] = MOCK_VRF_PROXY_ADDRESS;
 
         vm.mockCall(
             MOCK_TELEPORTER_REGISTRY_ADDRESS,
@@ -76,8 +77,8 @@ contract VRFProviderTest is Test {
             MOCK_CHAINLINK_VRF_WRAPPER_ADDRESS,
             address(linkToken)
         );
-        linkToken.approve(address(provider), 10**23);
-        provider.deposit(10**23);
+        linkToken.approve(address(provider), 10 ** 23);
+        provider.deposit(10 ** 23);
     }
 
     function testReceiveTeleporterMessageSuccess() public {
@@ -168,33 +169,30 @@ contract VRFProviderTest is Test {
         uint32 total = TELEPORTER_CALLBACK_GAS_LIMIT_BASE + (TELEPORTER_CALLBACK_GAS_LIMIT_PER_WORD * request.numWords);
         vm.mockCall(
             MOCK_CHAINLINK_VRF_WRAPPER_ADDRESS,
-            abi.encodeCall(
-                VRFV2WrapperInterface.calculateRequestPrice,
-                (total)
-            ),
-            abi.encode(uint256(300*1e18))
+            abi.encodeCall(VRFV2WrapperInterface.calculateRequestPrice, (total)),
+            abi.encode(uint256(300 * 1e18))
         );
         vm.mockCall(
             MOCK_CHAINLINK_VRF_WRAPPER_ADDRESS,
-            abi.encodeCall(
-                VRFV2WrapperInterface.lastRequestId, ()
-            ),
+            abi.encodeCall(VRFV2WrapperInterface.lastRequestId, ()),
             abi.encode(mockChainlinkVRFRequestID)
         );
         vm.prank(MOCK_TELEPOTER_MESSENGER_ADDRESS);
         vm.expectEmit(true, true, true, true, address(provider));
         emit Payment(MOCK_VRF_PROXY_ADDRESS, request.requestID, total);
         vm.expectEmit(true, true, true, true, address(provider));
-        emit VRFRequestReceived(MOCK_VRF_PROXY_BLOCKCHAIN_ID, MOCK_VRF_PROXY_ADDRESS, request.requestID, mockChainlinkVRFRequestID, request.numWords);
+        emit VRFRequestReceived(
+            MOCK_VRF_PROXY_BLOCKCHAIN_ID,
+            MOCK_VRF_PROXY_ADDRESS,
+            request.requestID,
+            mockChainlinkVRFRequestID,
+            request.numWords
+        );
         provider.receiveTeleporterMessage(MOCK_VRF_PROXY_BLOCKCHAIN_ID, MOCK_VRF_PROXY_ADDRESS, abi.encode(request));
     }
 
     function _getMockVRFRequestInfo() internal pure returns (VRFRequestInfo memory) {
-        return VRFRequestInfo({
-            requestID: 543,
-            minimumRequestConfirmations: 200,
-            callbackGasLimit: 200_000,
-            numWords: 1
-        });
+        return
+            VRFRequestInfo({requestID: 543, minimumRequestConfirmations: 200, callbackGasLimit: 200_000, numWords: 1});
     }
 }

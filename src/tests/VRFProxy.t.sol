@@ -15,7 +15,6 @@ import {VRFConsumer} from "../mocks/VRFConsumer.sol";
 import {Strings} from "@openzeppelin/contracts@4.8.1/utils/Strings.sol";
 
 contract VRFProxyTest is Test {
-
     address[] public managers;
     address[] public consumers;
 
@@ -127,7 +126,9 @@ contract VRFProxyTest is Test {
     }
 
     function testRemoveConsumerNotOwner() public {
-        vm.expectRevert("AccessControl: account 0x0000000000000000000000000000000000006666 is missing role 0x0000000000000000000000000000000000000000000000000000000000000000");
+        vm.expectRevert(
+            "AccessControl: account 0x0000000000000000000000000000000000006666 is missing role 0x0000000000000000000000000000000000000000000000000000000000000000"
+        );
         vm.prank(nonOwnerAddress);
         consumers[0] = mockConsumer;
         vrfConsumerRegistry.removeConsumers(consumers);
