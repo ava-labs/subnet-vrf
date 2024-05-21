@@ -45,11 +45,6 @@ contract VRFProviderTest is Test {
     event Payment(address indexed proxyAddress, uint256 indexed proxyRequestID, uint256 total);
 
     function setUp() public virtual {
-        managers = new address[](1);
-        managers[0] = address(this);
-        proxies = new address[](1);
-        proxies[0] = MOCK_VRF_PROXY_ADDRESS;
-
         vm.mockCall(
             MOCK_TELEPORTER_REGISTRY_ADDRESS,
             abi.encodeWithSelector(TeleporterRegistry(MOCK_TELEPORTER_REGISTRY_ADDRESS).latestVersion.selector),
@@ -68,8 +63,15 @@ contract VRFProviderTest is Test {
             ),
             abi.encode(MOCK_LATEST_TELEPORTER_VERSION)
         );
+
+        managers = new address[](1);
+        managers[0] = address(this);
+        proxies = new address[](1);
+        proxies[0] = MOCK_VRF_PROXY_ADDRESS;
+
         vrfProxyRegistry = new VRFProxyRegistry(address(this), managers);
         vrfProxyRegistry.addProxies(MOCK_VRF_PROXY_BLOCKCHAIN_ID, proxies);
+
         linkToken = new LinkToken();
         provider = new VRFProvider(
             MOCK_TELEPORTER_REGISTRY_ADDRESS,
@@ -77,6 +79,7 @@ contract VRFProviderTest is Test {
             MOCK_CHAINLINK_VRF_WRAPPER_ADDRESS,
             address(linkToken)
         );
+
         linkToken.approve(address(provider), 10 ** 23);
         provider.deposit(10 ** 23);
     }

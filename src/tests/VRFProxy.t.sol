@@ -133,36 +133,43 @@ contract VRFProxyTest is Test {
         // Add this contract as a consumer to be able to request values.
         _addConsumer(address(this));
 
-        // Submit a request.
+        // Initialize needed data.
         uint256 expectedRequestID = vrfProxy.requestNonce() + 1;
         uint16 mockMinConfs = 1;
         uint32 mockCallbackGasLimit = 213_000;
         uint32 mockNumWords = 20;
-        vm.mockCall(
-            MOCK_TELEPOTER_MESSENGER_ADDRESS,
-            abi.encodeWithSelector(ITeleporterMessenger.sendCrossChainMessage.selector),
-            abi.encode(bytes32(0))
-        );
+
+        // Construct a request.
         VRFRequestInfo memory expectedRequest = VRFRequestInfo({
             requestID: expectedRequestID,
             minimumRequestConfirmations: mockMinConfs,
             callbackGasLimit: mockCallbackGasLimit,
             numWords: mockNumWords
         });
+        // Construct the teleporter message input.
+        TeleporterMessageInput memory tmi = TeleporterMessageInput({
+            destinationBlockchainID: MOCK_VRF_PROVIDER_BLOCKCHAIN_ID,
+            destinationAddress: MOCK_VRF_PROVIDER_ADDRESS,
+            feeInfo: TeleporterFeeInfo({feeTokenAddress: address(0), amount: 0}),
+            requiredGasLimit: vrfProxy.VRF_REQUEST_REQUIRED_GAS(),
+            allowedRelayerAddresses: new address[](0),
+            message: abi.encode(expectedRequest, address(this))
+        });
+
+        // Create precise mock call and expectation.
+        vm.mockCall(
+            MOCK_TELEPOTER_MESSENGER_ADDRESS,
+            abi.encodeCall(ITeleporterMessenger.sendCrossChainMessage, (tmi)),
+            abi.encode(bytes32(0))
+        );
         vm.expectCall(
             MOCK_TELEPOTER_MESSENGER_ADDRESS,
-            abi.encodeWithSelector(
-                ITeleporterMessenger.sendCrossChainMessage.selector,
-                TeleporterMessageInput({
-                    destinationBlockchainID: MOCK_VRF_PROVIDER_BLOCKCHAIN_ID,
-                    destinationAddress: MOCK_VRF_PROVIDER_ADDRESS,
-                    feeInfo: TeleporterFeeInfo({feeTokenAddress: address(0), amount: 0}),
-                    requiredGasLimit: vrfProxy.VRF_REQUEST_REQUIRED_GAS(),
-                    allowedRelayerAddresses: new address[](0),
-                    message: abi.encode(expectedRequest, address(this))
-                })
+            abi.encodeCall(
+                ITeleporterMessenger.sendCrossChainMessage, (tmi)
             )
         );
+
+        // Expect the event, and its data to be precise
         vm.expectEmit(true, true, true, true, address(vrfProxy));
         emit RandomWordsRequested({
             requestID: expectedRequestID,
@@ -171,12 +178,15 @@ contract VRFProxyTest is Test {
             callbackGasLimit: mockCallbackGasLimit,
             numWords: mockNumWords
         });
+
+        // Request random words and assert validity of the requestID.
         uint256 requestID = vrfProxy.requestRandomWords(mockMinConfs, mockCallbackGasLimit, mockNumWords);
         assertEq(requestID, expectedRequestID);
     }
 
-    function testRequestRandomWordsNotAllowedConsumer() public {
+    function testRequestRandomWordsNotAnApprovedConsumer() public {
         vm.expectRevert(IVRFProxy.CallerIsNotAnApprovedConsumer.selector);
+        // address(this) is not an approved consumer
         vrfProxy.requestRandomWords(1, 200_000, 1);
     }
 
@@ -193,7 +203,7 @@ contract VRFProxyTest is Test {
         VRFConsumer consumer;
         vm.mockCall(
             MOCK_CONSUMER,
-            abi.encodeWithSelector(consumer.rawFulfillRandomWords.selector, requestID, mockValues),
+            abi.encodeCall(consumer.rawFulfillRandomWords, (requestID, mockValues)),
             new bytes(0)
         );
         vm.expectCall(
@@ -226,14 +236,14 @@ contract VRFProxyTest is Test {
         vm.mockCall(MOCK_CONSUMER, abi.encodeWithSelector(consumer.rawFulfillRandomWords.selector), new bytes(0));
         vm.mockCallRevert(
             MOCK_CONSUMER,
-            abi.encodeWithSelector(consumer.rawFulfillRandomWords.selector, requestID, mockValues),
+            abi.encodeCall(consumer.rawFulfillRandomWords, (requestID, mockValues)),
             new bytes(0)
         );
         vm.expectCall(
             MOCK_CONSUMER,
             0,
             callbackGasLimit,
-            abi.encodeWithSelector(consumer.rawFulfillRandomWords.selector, requestID, mockValues)
+            abi.encodeCall(consumer.rawFulfillRandomWords, (requestID, mockValues))
         );
         vm.expectEmit(true, true, true, true, address(vrfProxy));
         emit RandomWordsFulfilled(requestID, false);
@@ -284,7 +294,7 @@ contract VRFProxyTest is Test {
         VRFConsumer consumer;
         vm.mockCall(
             MOCK_CONSUMER,
-            abi.encodeWithSelector(consumer.rawFulfillRandomWords.selector, requestID, new uint256[](1)),
+            abi.encodeCall(consumer.rawFulfillRandomWords, (requestID, new uint256[](1))),
             new bytes(0)
         );
         vm.etch(MOCK_CONSUMER, new bytes(10));
