@@ -14,13 +14,6 @@ import {
 import {VRFConsumer} from "../mocks/VRFConsumer.sol";
 
 contract VRFProxyTest is Test {
-    address[] public managers;
-    address[] public consumers;
-
-    /**
-     * @dev Role which is has permission to add new consumers (but not to remove existing ones)
-     */
-    bytes32 public constant CONSUMER_MANAGER = keccak256("CONSUMER_MANAGER");
 
     address public constant MOCK_TELEPOTER_MESSENGER_ADDRESS = address(0x1111);
     uint256 public constant MOCK_LATEST_TELEPORTER_VERSION = 1;
@@ -29,12 +22,13 @@ contract VRFProxyTest is Test {
         bytes32(hex"1234567812345678123456781234567812345678123456781234567812345678");
     address public constant MOCK_VRF_PROVIDER_ADDRESS = address(0x3333);
     address public constant MOCK_CONSUMER = address(0x4444);
+    address public constant NON_OWNER_ADDRESS = address(0x6666);
 
     VRFConsumerRegistry public vrfConsumerRegistry;
     VRFProxy public vrfProxy;
 
-    address public constant MOCK_CONSUMER = address(0x5555);
-    address public constant NON_OWNER_ADDRESS = address(0x6666);
+    address[] public managers;
+    address[] public consumers;
 
     // Events emitted by VRFProxy
     event ConsumerAdded(address indexed consumer);
@@ -49,10 +43,6 @@ contract VRFProxyTest is Test {
     event RandomWordsFulfilled(uint256 indexed requestID, bool success);
 
     function setUp() public virtual {
-        managers = new address[](1);
-        managers[0] = address(this);
-        consumers = new address[](1);
-
         vm.mockCall(
             MOCK_TELEPORTER_REGISTRY_ADDRESS,
             abi.encodeWithSelector(TeleporterRegistry(MOCK_TELEPORTER_REGISTRY_ADDRESS).latestVersion.selector),
@@ -71,7 +61,15 @@ contract VRFProxyTest is Test {
             ),
             abi.encode(MOCK_LATEST_TELEPORTER_VERSION)
         );
+
+        managers = new address[](1);
+        managers[0] = address(this);
+
+        consumers = new address[](1);
+        consumers[0] = MOCK_CONSUMER;
+
         vrfConsumerRegistry = new VRFConsumerRegistry(address(this), managers);
+
         vrfProxy = new VRFProxy(
             MOCK_TELEPORTER_REGISTRY_ADDRESS,
             address(vrfConsumerRegistry),
@@ -87,6 +85,7 @@ contract VRFProxyTest is Test {
     function testAddConsumerZeroAddress() public {
         consumers[0] = address(0);
         vrfConsumerRegistry.addConsumers(consumers);
+        assertFalse(vrfConsumerRegistry.isValid(address(0)));
     }
 
     function testAddConsumerNotOwner() public {
@@ -94,7 +93,6 @@ contract VRFProxyTest is Test {
             "AccessControl: account 0x0000000000000000000000000000000000006666 is missing role 0x795edd50d89cf0f09d5fb90f6c834853abd2897512ea74c56cf89c0a94b5da8b"
         );
         vm.prank(NON_OWNER_ADDRESS);
-        consumers[0] = MOCK_CONSUMER;
         vrfConsumerRegistry.addConsumers(consumers);
     }
 
@@ -112,24 +110,23 @@ contract VRFProxyTest is Test {
         // Remove the consumer.
         vm.expectEmit(true, true, true, true, address(vrfConsumerRegistry));
         emit ConsumerRemoved(MOCK_CONSUMER);
-        consumers[0] = MOCK_CONSUMER;
         vrfConsumerRegistry.removeConsumers(consumers);
         assertFalse(vrfConsumerRegistry.isValid(MOCK_CONSUMER));
     }
 
     function testRemoveConsumerNotFound() public {
         // Try to remove the consumer that was never added.
-        consumers[0] = MOCK_CONSUMER;
         vrfConsumerRegistry.removeConsumers(consumers);
-        // nothing changes
+        // nothing changes - no events emitted
+        assertEq(vm.getRecordedLogs().length, 0);
     }
 
     function testRemoveConsumerNotOwner() public {
         vm.expectRevert(
             "AccessControl: account 0x0000000000000000000000000000000000006666 is missing role 0x0000000000000000000000000000000000000000000000000000000000000000"
         );
+        // NON_OWNER_ADDRESS does not have the DEFAULT_ADMIN_ROLE
         vm.prank(NON_OWNER_ADDRESS);
-        consumers[0] = MOCK_CONSUMER;
         vrfConsumerRegistry.removeConsumers(consumers);
     }
 
