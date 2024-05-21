@@ -10,7 +10,6 @@ interface ERC677Receiver {
  * THIS IS AN EXAMPLE CONTRACT THAT USES UNAUDITED CODE.
  * DO NOT USE THIS CODE IN PRODUCTION.
  */
-
 abstract contract ERC677Token is ERC20 {
     event Transfer(address indexed from, address indexed to, uint256 value, bytes data);
 

@@ -163,10 +163,7 @@ contract VRFProxyTest is Test {
             abi.encode(bytes32(0))
         );
         vm.expectCall(
-            MOCK_TELEPOTER_MESSENGER_ADDRESS,
-            abi.encodeCall(
-                ITeleporterMessenger.sendCrossChainMessage, (tmi)
-            )
+            MOCK_TELEPOTER_MESSENGER_ADDRESS, abi.encodeCall(ITeleporterMessenger.sendCrossChainMessage, (tmi))
         );
 
         // Expect the event, and its data to be precise
@@ -202,9 +199,7 @@ contract VRFProxyTest is Test {
             VRFResponseInfo({requestID: requestID, randomWords: mockValues, callbackGasLimit: callbackGasLimit});
         VRFConsumer consumer;
         vm.mockCall(
-            MOCK_CONSUMER,
-            abi.encodeCall(consumer.rawFulfillRandomWords, (requestID, mockValues)),
-            new bytes(0)
+            MOCK_CONSUMER, abi.encodeCall(consumer.rawFulfillRandomWords, (requestID, mockValues)), new bytes(0)
         );
         vm.expectCall(
             MOCK_CONSUMER,
@@ -235,15 +230,10 @@ contract VRFProxyTest is Test {
         VRFConsumer consumer;
         vm.mockCall(MOCK_CONSUMER, abi.encodeWithSelector(consumer.rawFulfillRandomWords.selector), new bytes(0));
         vm.mockCallRevert(
-            MOCK_CONSUMER,
-            abi.encodeCall(consumer.rawFulfillRandomWords, (requestID, mockValues)),
-            new bytes(0)
+            MOCK_CONSUMER, abi.encodeCall(consumer.rawFulfillRandomWords, (requestID, mockValues)), new bytes(0)
         );
         vm.expectCall(
-            MOCK_CONSUMER,
-            0,
-            callbackGasLimit,
-            abi.encodeCall(consumer.rawFulfillRandomWords, (requestID, mockValues))
+            MOCK_CONSUMER, 0, callbackGasLimit, abi.encodeCall(consumer.rawFulfillRandomWords, (requestID, mockValues))
         );
         vm.expectEmit(true, true, true, true, address(vrfProxy));
         emit RandomWordsFulfilled(requestID, false);
@@ -293,9 +283,7 @@ contract VRFProxyTest is Test {
         uint32 gasInsufficientForCheck = 15_000;
         VRFConsumer consumer;
         vm.mockCall(
-            MOCK_CONSUMER,
-            abi.encodeCall(consumer.rawFulfillRandomWords, (requestID, new uint256[](1))),
-            new bytes(0)
+            MOCK_CONSUMER, abi.encodeCall(consumer.rawFulfillRandomWords, (requestID, new uint256[](1))), new bytes(0)
         );
         vm.etch(MOCK_CONSUMER, new bytes(10));
         vm.expectRevert();
