@@ -5,5 +5,7 @@ import {VRFConsumerBaseV2} from "@chainlink/contracts/src/v0.8/vrf/VRFConsumerBa
 
 contract VRFConsumer is VRFConsumerBaseV2 {
     constructor(address vrfCoordinator) VRFConsumerBaseV2(vrfCoordinator) {}
+
+    // solhint-disable-next-line
     function fulfillRandomWords(uint256 vrfRequestID, uint256[] memory randomWords) internal override {}
 }

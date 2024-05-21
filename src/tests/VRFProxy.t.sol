@@ -14,7 +14,6 @@ import {
 import {VRFConsumer} from "../mocks/VRFConsumer.sol";
 
 contract VRFProxyTest is Test {
-
     address public constant MOCK_TELEPOTER_MESSENGER_ADDRESS = address(0x1111);
     uint256 public constant MOCK_LATEST_TELEPORTER_VERSION = 1;
     address public constant MOCK_TELEPORTER_REGISTRY_ADDRESS = address(0x2222);

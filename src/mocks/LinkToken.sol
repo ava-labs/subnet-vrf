@@ -32,7 +32,7 @@ abstract contract ERC677Token is ERC20 {
 
     function _isContract(address addr) private view returns (bool hasCode) {
         uint256 length;
-        /// @solidity memory-safe-assembly
+        // solhint-disable-next-line no-inline-assembly
         assembly {
             length := extcodesize(addr)
         }
