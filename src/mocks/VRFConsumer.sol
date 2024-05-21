@@ -3,6 +3,11 @@ pragma solidity 0.8.18;
 
 import {VRFConsumerBaseV2} from "@chainlink/contracts/src/v0.8/vrf/VRFConsumerBaseV2.sol";
 
+/**
+ * THIS IS AN EXAMPLE CONTRACT THAT USES UNAUDITED CODE.
+ * DO NOT USE THIS CODE IN PRODUCTION.
+ */
+
 contract VRFConsumer is VRFConsumerBaseV2 {
     constructor(address vrfCoordinator) VRFConsumerBaseV2(vrfCoordinator) {}
 
