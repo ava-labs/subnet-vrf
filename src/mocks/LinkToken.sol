@@ -18,8 +18,8 @@ abstract contract ERC677Token is ERC20 {
     function transferAndCall(address to, uint256 value, bytes calldata data) public virtual returns (bool success) {
         super.transfer(to, value);
         emit Transfer(msg.sender, to, value, data);
-        if (isContract(to)) {
-            contractFallback(to, value, data);
+        if (_isContract(to)) {
+            _contractFallback(to, value, data);
         }
         return true;
     }
@@ -50,7 +50,7 @@ contract LinkToken is ERC677Token {
     }
 
     constructor() ERC20("LINK", "ChainLinkToken") {
-        mint(msg.sender, 10 ** 27);
+        _mint(msg.sender, 10 ** 27);
     }
 
     /**
