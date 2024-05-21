@@ -12,7 +12,6 @@ import {
     TeleporterFeeInfo
 } from "@teleporter/contracts/src/Teleporter/ITeleporterMessenger.sol";
 import {VRFConsumer} from "../mocks/VRFConsumer.sol";
-import {Strings} from "@openzeppelin/contracts@4.8.1/utils/Strings.sol";
 
 contract VRFProxyTest is Test {
     address[] public managers;
@@ -34,8 +33,8 @@ contract VRFProxyTest is Test {
     VRFConsumerRegistry public vrfConsumerRegistry;
     VRFProxy public vrfProxy;
 
-    address private constant mockConsumer = address(0x5555);
-    address private constant nonOwnerAddress = address(0x6666);
+    address public constant MOCK_CONSUMER = address(0x5555);
+    address public constant NON_OWNER_ADDRESS = address(0x6666);
 
     // Events emitted by VRFProxy
     event ConsumerAdded(address indexed consumer);
@@ -82,7 +81,7 @@ contract VRFProxyTest is Test {
     }
 
     function testAddConsumerSucess() public {
-        _addConsumer(mockConsumer);
+        _addConsumer(MOCK_CONSUMER);
     }
 
     function testAddConsumerZeroAddress() public {
@@ -94,33 +93,33 @@ contract VRFProxyTest is Test {
         vm.expectRevert(
             "AccessControl: account 0x0000000000000000000000000000000000006666 is missing role 0x795edd50d89cf0f09d5fb90f6c834853abd2897512ea74c56cf89c0a94b5da8b"
         );
-        vm.prank(nonOwnerAddress);
-        consumers[0] = mockConsumer;
+        vm.prank(NON_OWNER_ADDRESS);
+        consumers[0] = MOCK_CONSUMER;
         vrfConsumerRegistry.addConsumers(consumers);
     }
 
     function addConsumerAlreadyAdded() public {
-        assertTrue(vrfConsumerRegistry.isValid(mockConsumer));
-        _addConsumer(mockConsumer);
+        assertTrue(vrfConsumerRegistry.isValid(MOCK_CONSUMER));
+        _addConsumer(MOCK_CONSUMER);
         vrfConsumerRegistry.addConsumers(consumers);
-        assertTrue(vrfConsumerRegistry.isValid(mockConsumer));
+        assertTrue(vrfConsumerRegistry.isValid(MOCK_CONSUMER));
     }
 
     function testRemoveConsumerSuccess() public {
         // Add a consumer.
-        _addConsumer(mockConsumer);
+        _addConsumer(MOCK_CONSUMER);
 
         // Remove the consumer.
         vm.expectEmit(true, true, true, true, address(vrfConsumerRegistry));
-        emit ConsumerRemoved(mockConsumer);
-        consumers[0] = mockConsumer;
+        emit ConsumerRemoved(MOCK_CONSUMER);
+        consumers[0] = MOCK_CONSUMER;
         vrfConsumerRegistry.removeConsumers(consumers);
-        assertFalse(vrfConsumerRegistry.isValid(mockConsumer));
+        assertFalse(vrfConsumerRegistry.isValid(MOCK_CONSUMER));
     }
 
     function testRemoveConsumerNotFound() public {
         // Try to remove the consumer that was never added.
-        consumers[0] = mockConsumer;
+        consumers[0] = MOCK_CONSUMER;
         vrfConsumerRegistry.removeConsumers(consumers);
         // nothing changes
     }
@@ -129,8 +128,8 @@ contract VRFProxyTest is Test {
         vm.expectRevert(
             "AccessControl: account 0x0000000000000000000000000000000000006666 is missing role 0x0000000000000000000000000000000000000000000000000000000000000000"
         );
-        vm.prank(nonOwnerAddress);
-        consumers[0] = mockConsumer;
+        vm.prank(NON_OWNER_ADDRESS);
+        consumers[0] = MOCK_CONSUMER;
         vrfConsumerRegistry.removeConsumers(consumers);
     }
 
@@ -343,14 +342,6 @@ contract VRFProxyTest is Test {
         );
     }
 
-    function _addConsumer(address consumer) private {
-        vm.expectEmit(true, true, true, true, address(vrfConsumerRegistry));
-        emit ConsumerAdded(consumer);
-        consumers[0] = consumer;
-        vrfConsumerRegistry.addConsumers(consumers);
-        assertTrue(vrfConsumerRegistry.isValid(consumer));
-    }
-
     function _makeRandomWordsRequest(address requester, uint32 callbackGasLimit) internal returns (uint256) {
         _addConsumer(requester);
         vm.mockCall(
@@ -360,5 +351,13 @@ contract VRFProxyTest is Test {
         );
         vm.prank(requester);
         return vrfProxy.requestRandomWords(1, callbackGasLimit, 1);
+    }
+
+    function _addConsumer(address consumer) private {
+        vm.expectEmit(true, true, true, true, address(vrfConsumerRegistry));
+        emit ConsumerAdded(consumer);
+        consumers[0] = consumer;
+        vrfConsumerRegistry.addConsumers(consumers);
+        assertTrue(vrfConsumerRegistry.isValid(consumer));
     }
 }

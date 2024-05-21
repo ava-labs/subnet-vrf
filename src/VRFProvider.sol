@@ -9,7 +9,6 @@ import {
     TeleporterMessageInput, TeleporterFeeInfo
 } from "@teleporter/contracts/src/Teleporter/ITeleporterMessenger.sol";
 import {TeleporterOwnerUpgradeable} from "@teleporter/contracts/src/Teleporter/upgrades/TeleporterOwnerUpgradeable.sol";
-import {LinkTokenInterface} from "@chainlink/contracts/src/v0.8/shared/interfaces/LinkTokenInterface.sol";
 
 contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerUpgradeable {
     /**

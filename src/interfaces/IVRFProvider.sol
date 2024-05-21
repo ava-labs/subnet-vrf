@@ -3,16 +3,6 @@ pragma solidity 0.8.18;
 
 interface IVRFProvider {
     /**
-     * Errors
-     */
-    error InsufficientBalance();
-    error ConsumerNotApprovedBySelectedStakeholder();
-    error CallerIsNotAnApprovedProxy();
-    error VRFProxyRegistryAddressIsZero();
-    error InvalidProxyRequestID();
-    error InvalidChainlinkVRFRequestID();
-
-    /**
      * @dev  The components of VRFRequestInfo that need to be persisted when requesting
      * random values from the Chainlink VRF coordinator. These values will be sent
      * back to the partner VRFCoorindator as part of the message to fulfill
@@ -66,4 +56,14 @@ interface IVRFProvider {
      * @param numWords - The number of random uint256 words.
      */
     event VRFRequestFulfilled(uint256 indexed proxyRequestID, uint256 indexed chainlinkVRFRequestID, uint32 numWords);
+
+    /**
+     * Errors
+     */
+    error InsufficientBalance();
+    error ConsumerNotApprovedBySelectedStakeholder();
+    error CallerIsNotAnApprovedProxy();
+    error VRFProxyRegistryAddressIsZero();
+    error InvalidProxyRequestID();
+    error InvalidChainlinkVRFRequestID();
 }

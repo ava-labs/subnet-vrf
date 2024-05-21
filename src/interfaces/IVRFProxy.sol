@@ -3,17 +3,6 @@ pragma solidity 0.8.18;
 
 interface IVRFProxy {
     /**
-     * Errors
-     */
-    error VRFProviderAddressIsZero();
-    error VRFConsumerRegistryAddressIsZero();
-    error VRFProviderBlockchainIDIsZero();
-    error CallerIsNotAnApprovedConsumer();
-    error InvalidSourceBlockchainID();
-    error CallerNotVRFProvider();
-    error InvalidRequestID();
-
-    /**
      * @dev Emmited when a request for random words is made.
      */
     event RandomWordsRequested(
@@ -32,4 +21,15 @@ interface IVRFProxy {
      * are responsible for the correctness of their own implementation. Success cannot be ensured by the VRFProxy.
      */
     event RandomWordsFulfilled(uint256 indexed requestID, bool success);
+
+    /**
+     * Errors
+     */
+    error VRFProviderAddressIsZero();
+    error VRFConsumerRegistryAddressIsZero();
+    error VRFProviderBlockchainIDIsZero();
+    error CallerIsNotAnApprovedConsumer();
+    error InvalidSourceBlockchainID();
+    error CallerNotVRFProvider();
+    error InvalidRequestID();
 }

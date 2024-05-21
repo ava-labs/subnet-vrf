@@ -28,7 +28,7 @@ contract VRFProxyRegistry is IVRFProxyRegistry, AccessControl {
      * @dev Function to whitelist proxies per blockchain for usage of the VRF service
      */
     function addProxies(bytes32 blockchainID, address[] calldata proxies) external onlyRole(PROXY_MANAGER) {
-        if (blockchainID == bytes32(0)) revert();
+        if (blockchainID == bytes32(0)) revert InvalidBlockchainID();
         uint256 length = proxies.length; // gas opt
         for (uint256 i; i < length; i++) {
             address proxy = proxies[i];
@@ -43,7 +43,7 @@ contract VRFProxyRegistry is IVRFProxyRegistry, AccessControl {
      * @dev Function to remove whitelisted proxies per blockchain for usage of the VRF service
      */
     function removeProxies(bytes32 blockchainID, address[] calldata proxies) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (blockchainID == bytes32(0)) revert();
+        if (blockchainID == bytes32(0)) revert InvalidBlockchainID();
         uint256 length = proxies.length; // gas opt
         for (uint256 i; i < length; i++) {
             address proxy = proxies[i];

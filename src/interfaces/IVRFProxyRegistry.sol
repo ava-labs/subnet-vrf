@@ -11,10 +11,8 @@ interface IVRFProxyRegistry {
      */
     event ProxyRemoved(bytes32 indexed blockchainID, address indexed proxy);
 
-    /**
-     * @dev Function to check if a proxy from a specific blockchain is approved to call the provider contract.
-     */
-    function isValid(bytes32 blockchainID, address proxy) external view returns (bool approved);
+    // Errors
+    error InvalidBlockchainID();
 
     /**
      * @dev Function add proxies.
@@ -24,4 +22,9 @@ interface IVRFProxyRegistry {
      * @dev Function remove proxies.
      */
     function removeProxies(bytes32 blockchainID, address[] calldata proxies) external;
+
+    /**
+     * @dev Function to check if a proxy from a specific blockchain is approved to call the provider contract.
+     */
+    function isValid(bytes32 blockchainID, address proxy) external view returns (bool approved);
 }

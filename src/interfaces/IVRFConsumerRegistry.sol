@@ -12,11 +12,6 @@ interface IVRFConsumerRegistry {
     event ConsumerRemoved(address indexed consumer);
 
     /**
-     * @dev Function to check if consumer is allowed to use the service.
-     */
-    function isValid(address consumer) external view returns (bool approved);
-
-    /**
      * @dev Function add consumers.
      */
     function addConsumers(address[] calldata consumers) external;
@@ -24,4 +19,9 @@ interface IVRFConsumerRegistry {
      * @dev Function to remove consumers.
      */
     function removeConsumers(address[] calldata consumers) external;
+
+    /**
+     * @dev Function to check if consumer is allowed to use the service.
+     */
+    function isValid(address consumer) external view returns (bool approved);
 }
