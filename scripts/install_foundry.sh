@@ -9,8 +9,7 @@ set -e
 export XDG_CONFIG_HOME=$HOME
 
 # This installs from ava-labs fork of the foundry repo.
-FOUNDRY_VERSION=v0.1.0
 curl -L https://foundry.paradigm.xyz | bash
 
 export PATH=$PATH:$HOME/.foundry/bin:$HOME/.foundry:$HOME/.cargo/bin
-foundryup
+foundryup --version nightly
