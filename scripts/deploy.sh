@@ -82,3 +82,20 @@ forge create --private-key $user_private_key \
   --constructor-args $vrf_proxy_address \
   --rpc-url $subnet_url > /dev/null
 echo "Deployed VRFConsumer to Subnet: $vrf_consumer_mock_address."
+
+# Approve the deployed VRFProxy for Subnet Id on VRFProxyRegistry
+echo "Approving VRFProxy on ProxyRegistry..."
+cast call $vrf_proxy_registry_address \
+  "addProxies(bytes32,address[])" \
+  $subnet_blockchain_id "[$vrf_proxy_address]" \
+  --private-key $user_private_key --rpc-url $c_chain_url \
+  > /dev/null
+echo "VRFProxy Approved."
+
+# Approve the deployed VRFConsumer on VRFConsumerRegistry
+echo "Approving VRFConsumer on VRFConsumerRegistry"
+cast call $vrf_consumer_registry_address \
+  "addConsumers(address[])" "[$vrf_consumer_registry_address]" \
+  --private-key $user_private_key --rpc-url $subnet_url \
+  > /dev/null
+echo "VRFConsumer Approved."
