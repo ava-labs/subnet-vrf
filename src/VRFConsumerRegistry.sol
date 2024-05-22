@@ -14,7 +14,7 @@ contract VRFConsumerRegistry is IVRFConsumerRegistry, AccessControl {
     constructor(address admin, address[] memory consumerManagers) {
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
         _grantRole(CONSUMER_MANAGER, admin);
-        uint256 length = consumerManagers.length; // gas opt
+        uint256 length = consumerManagers.length;
         for (uint256 i; i < length; i++) {
             _grantRole(CONSUMER_MANAGER, consumerManagers[i]);
         }
@@ -22,7 +22,7 @@ contract VRFConsumerRegistry is IVRFConsumerRegistry, AccessControl {
 
     /// @inheritdoc IVRFConsumerRegistry
     function addConsumers(address[] calldata consumers) external onlyRole(CONSUMER_MANAGER) {
-        uint256 length = consumers.length; // gas opt
+        uint256 length = consumers.length;
         for (uint256 i; i < length; i++) {
             address consumer = consumers[i];
             if (!isApprovedConsumer[consumer] && consumer != address(0)) {
@@ -34,7 +34,7 @@ contract VRFConsumerRegistry is IVRFConsumerRegistry, AccessControl {
 
     /// @inheritdoc IVRFConsumerRegistry
     function removeConsumers(address[] calldata consumers) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        uint256 length = consumers.length; // gas opt
+        uint256 length = consumers.length;
         for (uint256 i; i < length; i++) {
             address consumer = consumers[i];
             if (isApprovedConsumer[consumer] && consumer != address(0)) {
