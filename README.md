@@ -1,5 +1,8 @@
 # Subnet VRF by NIMA
 ![Diagram](./images/diagram.png)
+[![Lint](https://github.com/NIMA-Enterprises/subnet-vrf/actions/workflows/lint.yml/badge.svg)](https://github.com/NIMA-Enterprises/subnet-vrf/actions/workflows/lint.yml)
+[![Unit Tests](https://github.com/NIMA-Enterprises/subnet-vrf/actions/workflows/test.yml/badge.svg)](https://github.com/NIMA-Enterprises/subnet-vrf/actions/workflows/test.yml)
+[![Slither Static Analysis](https://github.com/NIMA-Enterprises/subnet-vrf/actions/workflows/slither.yml/badge.svg)](https://github.com/NIMA-Enterprises/subnet-vrf/actions/workflows/slither.yml)
 
 ## Foundry
 
