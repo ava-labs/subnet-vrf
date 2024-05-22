@@ -33,5 +33,6 @@ interface IVRFProxyRegistry is IAccessControl {
     /**
      * @dev Role which is has permission to add new proxies (but not to remove existing ones)
      */
+    // solhint-disable-next-line
     function PROXY_MANAGER() external pure returns (bytes32 ROLE_HASH);
 }

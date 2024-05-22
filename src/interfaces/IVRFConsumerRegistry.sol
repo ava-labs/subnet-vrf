@@ -30,5 +30,6 @@ interface IVRFConsumerRegistry is IAccessControl {
     /**
      * @dev Role which is has permission to add new consumers (but not to remove existing ones)
      */
+    // solhint-disable-next-line
     function CONSUMER_MANAGER() external pure returns (bytes32 ROLE_HASH);
 }
