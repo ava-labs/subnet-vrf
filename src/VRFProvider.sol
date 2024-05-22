@@ -11,30 +11,18 @@ import {
 import {TeleporterOwnerUpgradeable} from "@teleporter/contracts/src/Teleporter/upgrades/TeleporterOwnerUpgradeable.sol";
 
 contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerUpgradeable {
-    /**
-     * @dev Variable containing the $LINK balance, deposited by the official authorities.
-     */
+    /// @inheritdoc IVRFProvider
     uint256 public balance;
-
-    /**
-     * @dev Mapping which tracks the authorized funders
-     */
-    mapping(address account => bool isAllowedToDeposit) public authorizedFunders;
-
-    /**
-     * @dev Variable containing the VRF Proxy Registry, contract used for management of proxies.
-     */
+    /// @inheritdoc IVRFProvider
     IVRFProxyRegistry public vrfProxyRegistry;
-
+    /// @inheritdoc IVRFProvider
+    mapping(address account => bool isAllowedToDeposit) public authorizedFunders;
     /**
      * @dev Tracks the request information by the Chainlink VRF request ID.
      */
     mapping(uint256 chainlinkVRFRequestID => InternalRequestInfo requestInfo) internal _requests;
 
-    /**
-     * @dev Gas limits for receiving random words from the Chainlink VRF coordinator, and sending
-     * them in a Teleporter message to the partner Teleporter VRF coordinator contract.
-     */
+    /// @inheritdoc IVRFProvider
     uint32 public constant TELEPORTER_CALLBACK_GAS_LIMIT_BASE = 300_000;
     uint32 public constant TELEPORTER_CALLBACK_GAS_LIMIT_PER_WORD = 5_000;
     uint32 public constant TELEPORTER_RECEIVE_MESSAGE_GAS_OVERHEAD = 300_000;
@@ -52,9 +40,7 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
         vrfProxyRegistry = IVRFProxyRegistry(vrfProxyRegistry_);
     }
 
-    /**
-     * @dev Function to add authorized funders
-     */
+    /// @inheritdoc IVRFProvider
     function addFunders(address[] calldata funders) external onlyOwner {
         uint256 length = funders.length;
         for (uint256 i; i < length; i++) {
@@ -66,9 +52,7 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
         }
     }
 
-    /**
-     * @dev Function to remove authorized funders
-     */
+    /// @inheritdoc IVRFProvider
     function removeFunders(address[] calldata funders) external onlyOwner {
         uint256 length = funders.length;
         for (uint256 i; i < length; i++) {
@@ -80,9 +64,7 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
         }
     }
 
-    /**
-     * @dev Enables stakeholders to deposit $LINK
-     */
+    /// @inheritdoc IVRFProvider
     function deposit(uint256 amount) external {
         if (!authorizedFunders[msg.sender] && msg.sender != owner()) revert NotAnAuthorizedFunder();
         LINK.transferFrom(msg.sender, address(this), amount);
@@ -92,9 +74,7 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
         emit Deposit(amount);
     }
 
-    /**
-     * @dev Enables external parties and service users to withdraw their $LINK
-     */
+    /// @inheritdoc IVRFProvider
     function withdraw(uint256 amount) external onlyOwner {
         if (balance >= amount) revert InsufficientBalance();
         unchecked {

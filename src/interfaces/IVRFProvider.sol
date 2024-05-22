@@ -1,7 +1,10 @@
 // SPDX-License-IDentifier: UNLICENSED
 pragma solidity 0.8.18;
 
-interface IVRFProvider {
+import {ITeleporterReceiver} from "@teleporter/contracts/src/Teleporter/ITeleporterReceiver.sol";
+import {IVRFProxyRegistry} from "./IVRFProxyRegistry.sol";
+
+interface IVRFProvider is ITeleporterReceiver {
     /**
      * @dev  The components of VRFRequestInfo that need to be persisted when requesting
      * random values from the Chainlink VRF coordinator. These values will be sent
@@ -76,4 +79,49 @@ interface IVRFProvider {
     error InvalidProxyRequestID();
     error InvalidChainlinkVRFRequestID();
     error VRFProxyRegistryAddressIsZero();
+
+    /**
+     * @dev Function to add authorized funders
+     */
+    function addFunders(address[] calldata funders) external;
+
+    /**
+     * @dev Function to remove authorized funders
+     */
+    function removeFunders(address[] calldata funders) external;
+
+    /**
+     * @dev Enables stakeholders to deposit $LINK
+     */
+    function deposit(uint256 amount) external;
+
+    /**
+     * @dev Enables external parties and service users to withdraw their $LINK
+     */
+    function withdraw(uint256 amount) external;
+
+    /**
+     * @dev Variable containing the $LINK balance, deposited by the official authorities.
+     */
+    function balance() external view returns (uint256);
+
+    /**
+     * @dev Variable containing the VRF Proxy Registry, contract used for management of proxies.
+     */
+    function vrfProxyRegistry() external view returns (IVRFProxyRegistry);
+
+    /**
+     * @dev Mapping which tracks the authorized funders
+     */
+    function authorizedFunders(address account) external view returns (bool);
+
+    /**
+     * @dev Gas limits for receiving random words from the Chainlink VRF coordinator, and sending
+     * them in a Teleporter message to the partner Teleporter VRF coordinator contract.
+     */
+    /* solhint-disable */
+    function TELEPORTER_CALLBACK_GAS_LIMIT_BASE() external pure returns (uint32);
+    function TELEPORTER_CALLBACK_GAS_LIMIT_PER_WORD() external pure returns (uint32);
+    function TELEPORTER_RECEIVE_MESSAGE_GAS_OVERHEAD() external pure returns (uint32);
+    /* solhint-enable */
 }
