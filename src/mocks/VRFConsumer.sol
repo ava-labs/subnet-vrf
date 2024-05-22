@@ -18,8 +18,9 @@ contract VRFConsumer is VRFConsumerBaseV2 {
     mapping(uint256 vrfRequestID => Guess guess) public guesses;
     mapping(address guesser => uint256 amountToClaim) public rewards;
 
-    event Payout(address guesser, uint256 reward);
-    event Fund(address funder, uint256 total);
+    event Payout(address indexed guesser, uint256 reward);
+    event Fund(address indexed funder, uint256 total);
+    event Guess(address indexed guesser, uint256 guess, uint256 indexed vrfRequestID)
 
     /// vrfCoordinator in this case is our VRFProxy.
     constructor(address vrfCoordinator) VRFConsumerBaseV2(vrfCoordinator) {}
@@ -39,6 +40,7 @@ contract VRFConsumer is VRFConsumerBaseV2 {
         guesses[vrfRequestID] = Guess({guesser: msg.sender, guess: guess});
 
         IVRFProxy(proxy).requestRandomWords(1, 200_000, 1);
+        emit Guess(msg.sender, guess, vrfRequestID);
     }
 
     function claim() external {
