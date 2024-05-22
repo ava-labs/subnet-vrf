@@ -84,7 +84,7 @@ contract VRFProxyTest is Test {
     function testAddConsumerZeroAddress() public {
         consumers[0] = address(0);
         vrfConsumerRegistry.addConsumers(consumers);
-        assertFalse(vrfConsumerRegistry.isValid(address(0)));
+        assertFalse(vrfConsumerRegistry.isApprovedConsumer(address(0)));
     }
 
     function testAddConsumerNotOwner() public {
@@ -96,10 +96,12 @@ contract VRFProxyTest is Test {
     }
 
     function addConsumerAlreadyAdded() public {
-        assertTrue(vrfConsumerRegistry.isValid(MOCK_CONSUMER));
+        assertTrue(vrfConsumerRegistry.isApprovedConsumer(MOCK_CONSUMER));
         _addConsumer(MOCK_CONSUMER);
         vrfConsumerRegistry.addConsumers(consumers);
-        assertTrue(vrfConsumerRegistry.isValid(MOCK_CONSUMER));
+        // Nothing changes - no events emitted
+        assertEq(vm.getRecordedLogs().length, 0);
+        assertTrue(vrfConsumerRegistry.isApprovedConsumer(MOCK_CONSUMER));
     }
 
     function testRemoveConsumerSuccess() public {
@@ -110,13 +112,13 @@ contract VRFProxyTest is Test {
         vm.expectEmit(true, true, true, true, address(vrfConsumerRegistry));
         emit ConsumerRemoved(MOCK_CONSUMER);
         vrfConsumerRegistry.removeConsumers(consumers);
-        assertFalse(vrfConsumerRegistry.isValid(MOCK_CONSUMER));
+        assertFalse(vrfConsumerRegistry.isApprovedConsumer(MOCK_CONSUMER));
     }
 
     function testRemoveConsumerNotFound() public {
         // Try to remove the consumer that was never added.
         vrfConsumerRegistry.removeConsumers(consumers);
-        // nothing changes - no events emitted
+        // Nothing changes - no events emitted
         assertEq(vm.getRecordedLogs().length, 0);
     }
 
@@ -352,6 +354,6 @@ contract VRFProxyTest is Test {
         emit ConsumerAdded(consumer);
         consumers[0] = consumer;
         vrfConsumerRegistry.addConsumers(consumers);
-        assertTrue(vrfConsumerRegistry.isValid(consumer));
+        assertTrue(vrfConsumerRegistry.isApprovedConsumer(consumer));
     }
 }

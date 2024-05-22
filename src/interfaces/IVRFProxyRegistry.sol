@@ -1,7 +1,9 @@
 // SPDX-License-IDentifier: UNLICENSED
 pragma solidity 0.8.18;
 
-interface IVRFProxyRegistry {
+import {IAccessControl} from "@openzeppelin/contracts@4.8.1/access/IAccessControl.sol";
+
+interface IVRFProxyRegistry is IAccessControl {
     /**
      * @dev Emitted when a new proxy is added.
      */
@@ -24,7 +26,12 @@ interface IVRFProxyRegistry {
     function removeProxies(bytes32 blockchainID, address[] calldata proxies) external;
 
     /**
-     * @dev Function to check if a proxy from a specific blockchain is approved to call the provider contract.
+     * @dev Mapping containing status of proxies, if they're approved to use the VRF Service or not (per blockchain)
      */
-    function isValid(bytes32 blockchainID, address proxy) external view returns (bool approved);
+    function isApprovedProxy(bytes32 blockchainID, address proxy) external view returns (bool approved);
+
+    /**
+     * @dev Role which is has permission to add new proxies (but not to remove existing ones)
+     */
+    function PROXY_MANAGER() external pure returns (bytes32 ROLE_HASH);
 }

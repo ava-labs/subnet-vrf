@@ -73,7 +73,7 @@ contract VRFProxy is IVRFProxy, TeleporterOwnerUpgradeable {
         external
         returns (uint256)
     {
-        if (!vrfConsumerRegistry.isValid(msg.sender)) revert CallerIsNotAnApprovedConsumer();
+        if (!vrfConsumerRegistry.isApprovedConsumer(msg.sender)) revert CallerIsNotAnApprovedConsumer();
         // Assign the next nonce to be used at the request ID.
         uint256 nonce = ++requestNonce;
         VRFRequestInfo memory requestInfo = VRFRequestInfo({

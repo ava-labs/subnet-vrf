@@ -1,7 +1,9 @@
 // SPDX-License-IDentifier: UNLICENSED
 pragma solidity 0.8.18;
 
-interface IVRFConsumerRegistry {
+import {IAccessControl} from "@openzeppelin/contracts@4.8.1/access/IAccessControl.sol";
+
+interface IVRFConsumerRegistry is IAccessControl {
     /**
      * @dev Emitted when a new consumer is added.
      */
@@ -21,7 +23,12 @@ interface IVRFConsumerRegistry {
     function removeConsumers(address[] calldata consumers) external;
 
     /**
-     * @dev Function to check if consumer is allowed to use the service.
+     * @dev Mapping containing status of consumers, if they're approved to use the VRF Service or not
      */
-    function isValid(address consumer) external view returns (bool approved);
+    function isApprovedConsumer(address consumer) external view returns (bool approved);
+
+    /**
+     * @dev Role which is has permission to add new consumers (but not to remove existing ones)
+     */
+    function CONSUMER_MANAGER() external pure returns (bytes32 ROLE_HASH);
 }
