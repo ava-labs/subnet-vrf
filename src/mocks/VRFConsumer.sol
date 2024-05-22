@@ -20,7 +20,7 @@ contract VRFConsumer is VRFConsumerBaseV2 {
 
     event Payout(address indexed guesser, uint256 reward);
     event Fund(address indexed funder, uint256 total);
-    event Guess(address indexed guesser, uint256 guess, uint256 indexed vrfRequestID)
+    event NewGuess(address indexed guesser, uint256 guess, uint256 indexed vrfRequestID);
 
     /// vrfCoordinator in this case is our VRFProxy.
     constructor(address vrfCoordinator) VRFConsumerBaseV2(vrfCoordinator) {}
@@ -29,7 +29,7 @@ contract VRFConsumer is VRFConsumerBaseV2 {
         emit Fund(msg.sender, msg.value);
     }
 
-    function guessTheRandomNumber(uint256 guess) external {
+    function takeAGuess(uint256 guess) external {
         address proxy;
         // solhint-disable-next-line no-inline-assembly
         assembly {
@@ -40,7 +40,7 @@ contract VRFConsumer is VRFConsumerBaseV2 {
         guesses[vrfRequestID] = Guess({guesser: msg.sender, guess: guess});
 
         IVRFProxy(proxy).requestRandomWords(1, 200_000, 1);
-        emit Guess(msg.sender, guess, vrfRequestID);
+        emit NewGuess(msg.sender, guess, vrfRequestID);
     }
 
     function claim() external {
