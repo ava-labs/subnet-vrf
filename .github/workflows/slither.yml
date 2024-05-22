@@ -1,12 +1,12 @@
 name: Slither Analysis
 
-on:
-  push:
-    branches:
-      - master
-  pull_request:
-    branches:
-      - "*"
+on: workflow_dispatch
+#  push:
+#    branches:
+#      - master
+#  pull_request:
+#    branches:
+#      - "*"
 
 jobs:
   slither-analyze:
