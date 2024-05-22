@@ -12,6 +12,7 @@ contract VRFConsumer is VRFConsumerBaseV2 {
     struct Guess {
         address guesser;
         uint256 guess;
+        bool isResolved;
     }
 
     IVRFProxy public proxy;
@@ -24,6 +25,10 @@ contract VRFConsumer is VRFConsumerBaseV2 {
     event Fund(address indexed funder, uint256 total);
     event NewGuess(address indexed guesser, uint256 guess, uint256 indexed vrfRequestID);
 
+    error InvalidDataLength();
+    error InvalidRequestID();
+    error RequestAlreadyResolved();
+
     /// vrfCoordinator in this case is our VRFProxy.
     constructor(address vrfCoordinator) VRFConsumerBaseV2(vrfCoordinator) {
         proxy = IVRFProxy(vrfCoordinator);
@@ -35,7 +40,7 @@ contract VRFConsumer is VRFConsumerBaseV2 {
 
     function takeAGuess(uint256 guess) external {
         uint256 vrfRequestID = proxy.requestNonce() + 1;
-        guesses[vrfRequestID] = Guess({guesser: msg.sender, guess: guess});
+        guesses[vrfRequestID] = Guess({guesser: msg.sender, guess: guess, isResolved: false});
 
         proxy.requestRandomWords(1, 200_000, 1);
         emit NewGuess(msg.sender, guess, vrfRequestID);
@@ -51,7 +56,10 @@ contract VRFConsumer is VRFConsumerBaseV2 {
 
     // solhint-disable-next-line
     function fulfillRandomWords(uint256 vrfRequestID, uint256[] memory randomWords) internal override {
+        if (randomWords.length != 1) revert InvalidDataLength();
         Guess memory guess = guesses[vrfRequestID];
+        if (guess.guesser == address(0)) revert InvalidRequestID();
+        if (guess.isResolved) revert RequestAlreadyResolved();
         if (randomWords[0] == guess.guess) {
             rewards[guess.guesser] += REWARD_AMOUNT;
         }

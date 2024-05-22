@@ -33,8 +33,19 @@ contract SimpleBettingGameTest is Test {
         consumer.takeAGuess(number);
 
         // Get the new bet.
-        (address guesser, uint256 guess) = consumer.guesses(expectedRequestId);
+        (address guesser, uint256 guess,) = consumer.guesses(expectedRequestId);
         assertEq(guesser, address(this));
         assertEq(guess, number);
+    }
+
+    function testFulfillRandomWordsInvalidLength() public {
+        uint256[] memory randomWords = new uint256[](2);
+        randomWords[0] = 67;
+        randomWords[1] = 68;
+
+        // The game only allows a single random word.
+        vm.prank(MOCK_VRF_COORDINATOR);
+        vm.expectRevert(VRFConsumer.InvalidDataLength.selector);
+        consumer.rawFulfillRandomWords(123, randomWords);
     }
 }
