@@ -14,32 +14,30 @@ contract VRFConsumer is VRFConsumerBaseV2 {
         uint256 guess;
     }
 
-    uint256 public constant REWARD_AMOUNT = 0.05 ether;
+    IVRFProxy public proxy;
     mapping(uint256 vrfRequestID => Guess guess) public guesses;
     mapping(address guesser => uint256 amountToClaim) public rewards;
+
+    uint256 public constant REWARD_AMOUNT = 0.05 ether;
 
     event Payout(address indexed guesser, uint256 reward);
     event Fund(address indexed funder, uint256 total);
     event NewGuess(address indexed guesser, uint256 guess, uint256 indexed vrfRequestID);
 
     /// vrfCoordinator in this case is our VRFProxy.
-    constructor(address vrfCoordinator) VRFConsumerBaseV2(vrfCoordinator) {}
+    constructor(address vrfCoordinator) VRFConsumerBaseV2(vrfCoordinator) {
+        proxy = IVRFProxy(vrfCoordinator);
+    }
 
     receive() external payable {
         emit Fund(msg.sender, msg.value);
     }
 
     function takeAGuess(uint256 guess) external {
-        address proxy;
-        // solhint-disable-next-line no-inline-assembly
-        assembly {
-            proxy := sload(0x00)
-        }
-
-        uint256 vrfRequestID = IVRFProxy(proxy).requestNonce() + 1;
+        uint256 vrfRequestID = proxy.requestNonce() + 1;
         guesses[vrfRequestID] = Guess({guesser: msg.sender, guess: guess});
 
-        IVRFProxy(proxy).requestRandomWords(1, 200_000, 1);
+        proxy.requestRandomWords(1, 200_000, 1);
         emit NewGuess(msg.sender, guess, vrfRequestID);
     }
 
