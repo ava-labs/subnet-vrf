@@ -9,7 +9,6 @@ REPO_BASE_PATH=$(
 )
 
 source $REPO_BASE_PATH/.env
-source $REPO_BASE_PATH/scripts/utils.sh
 
 # Retrieve the user address from private key
 user_address=$(cast wallet address --private-key $user_private_key)
@@ -23,31 +22,34 @@ subnet_nonce=$(cast nonce $user_address --rpc-url $subnet_url);
 
 # Compute VRFProxyRegistry C-Chain address.
 computed_proxy_registry_contract_address=$(cast compute-address $user_address --rpc-url $c_chain_url)
-vrf_proxy_registry_address=$(parseComputedContractAddress "$computed_provider_contract_address")
+vrf_proxy_registry_address=${computed_proxy_registry_contract_address: 18}
+#echo "a" $vrf_proxy_registry_address
 
 # Compute VRFProvider C-Chain address.
-computed_provider_contract_address=$(cast compute-address $user_address --nonce ((++c_chain_nonce)) --rpc-url $c_chain_url)
-vrf_provider_address=$(parseComputedContractAddress "$computed_provider_contract_address")
+computed_provider_contract_address=$(cast compute-address $user_address --nonce $((++c_chain_nonce)) --rpc-url $c_chain_url)
+vrf_provider_address=${computed_provider_contract_address: 18}
+#echo "b" $vrf_provider_address
 
 # Compute VRFConsume Registry Subnet address.
 computed_consumer_registry_contract_address=$(cast compute-address $user_address --rpc-url $subnet_url)
-vrf_consumer_registry_address=$(parseComputedContractAddress "$computed_proxy_contract_address")
+vrf_consumer_registry_address=${computed_consumer_registry_contract_address: 18}
+#echo "c" $vrf_consumer_registry_address
 
 # Compute VRFProxy address Subnet address.
-computed_proxy_contract_address=$(cast compute-address $user_address --nonce ((++subnet_nonce)) --rpc-url $subnet_url)
-vrf_proxy_address=$(parseComputedContractAddress "$computed_proxy_contract_address")
+computed_proxy_contract_address=$(cast compute-address $user_address --nonce $((++subnet_nonce)) --rpc-url $subnet_url)
+vrf_proxy_address=${computed_proxy_contract_address: 18}
+#echo "d" $vrf_proxy_address
 
 # Compute VRFConsumer (mock) address Subnet address.
-computed_consumer_contract_address=$(cast compute-address $user_address --nonce ((++subnet_nonce)) --rpc-url $subnet_url)
-vrf_consumer_mock_address=$(parseComputedContractAddress "$computed_proxy_contract_address")
-
-cd $REPO_BASE_PATH/contracts
+computed_consumer_contract_address=$(cast compute-address $user_address --nonce $((2+subnet_nonce)) --rpc-url $subnet_url)
+vrf_consumer_mock_address=${computed_consumer_contract_address: 18}
+#echo "e" $vrf_consumer_mock_address
 
 # Deploy the VRFProxyRegistry contract to the C-Chain.
 echo "Deploying VRFProxyRegistry to C-Chain..."
 forge create --private-key $user_private_key \
     src/VRFProxyRegistry.sol:VRFProxyRegistry \
-    --constructor-args $c_chain_proxy_registry_admin $c_chain_proxy_registry_managers \
+    --constructor-args $c_chain_proxy_registry_admin [$c_chain_proxy_registry_managers] \
     --rpc-url $c_chain_url > /dev/null
 echo "Deployed VRFProxyRegistry to C-Chain: $vrf_proxy_registry_address."
 
@@ -63,7 +65,7 @@ echo "Deployed VRFProvider to C-Chain: $vrf_provider_address."
 echo "Deploying VRFConsumerRegistry to Subnet..."
 forge create --private-key $user_private_key \
     src/VRFConsumerRegistry.sol:VRFConsumerRegistry \
-    --constructor-args $c_chain_consumer_registry_admin $c_chain_consumer_registry_managers \
+    --constructor-args $subnet_consumer_registry_admin [$subnet_consumer_registry_managers] \
     --rpc-url $subnet_url > /dev/null
 echo "Deployed VRFConsumerRegistry to Subnet: $vrf_consumer_registry_address."
 
@@ -84,7 +86,7 @@ forge create --private-key $user_private_key \
 echo "Deployed VRFConsumer to Subnet: $vrf_consumer_mock_address."
 
 # Approve the deployed VRFProxy for Subnet Id on VRFProxyRegistry
-echo "Approving VRFProxy on ProxyRegistry..."
+echo "Approving VRFProxy on VRFProxyRegistry..."
 cast call $vrf_proxy_registry_address \
   "addProxies(bytes32,address[])" \
   $subnet_blockchain_id "[$vrf_proxy_address]" \
@@ -93,7 +95,7 @@ cast call $vrf_proxy_registry_address \
 echo "VRFProxy Approved."
 
 # Approve the deployed VRFConsumer on VRFConsumerRegistry
-echo "Approving VRFConsumer on VRFConsumerRegistry"
+echo "Approving VRFConsumer on VRFConsumerRegistry..."
 cast call $vrf_consumer_registry_address \
   "addConsumers(address[])" "[$vrf_consumer_registry_address]" \
   --private-key $user_private_key --rpc-url $subnet_url \
