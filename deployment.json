@@ -1,0 +1,11 @@
+{
+  "c-chain": {
+    "VRFProxyRegistry": "0x3aE9C3060498947b69F5502336cCF5e57E44d572",
+    "VRFProvider": "0x341E1fAab39E820C91C09c25B1667e77189C644e"
+  },
+  "dispatch-subnet": {
+    "VRFConsumerRegistry": "0x5D370a6189F89603FaB67e9C68383e63F7B6A262",
+    "VRFProxy": "0x027D2E627209f1cebA52ADc8A5aFE9318459b44B",
+    "VRFConsumer": "0x2346d3A6fb18Ff3ae590Ea31d9e41E6AB8c9f5EB"
+  }
+}
