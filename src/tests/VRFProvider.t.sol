@@ -185,6 +185,7 @@ contract VRFProviderTest is Test {
         vm.expectEmit(true, true, true, true, address(provider));
         emit Payment(MOCK_VRF_PROXY_ADDRESS, request.requestID, total);
         vm.expectEmit(true, true, true, true, address(provider));
+        // solhint-disable-next-line
         emit VRFRequestReceived(
             MOCK_VRF_PROXY_BLOCKCHAIN_ID,
             MOCK_VRF_PROXY_ADDRESS,
