@@ -57,9 +57,10 @@ contract VRFConsumer is VRFConsumerBaseV2 {
     // solhint-disable-next-line
     function fulfillRandomWords(uint256 vrfRequestID, uint256[] memory randomWords) internal override {
         if (randomWords.length != 1) revert InvalidDataLength();
-        Guess memory guess = guesses[vrfRequestID];
+        Guess storage guess = guesses[vrfRequestID];
         if (guess.guesser == address(0)) revert InvalidRequestID();
         if (guess.isResolved) revert RequestAlreadyResolved();
+        guess.isResolved = true;
         if (randomWords[0] == guess.guess) {
             rewards[guess.guesser] += REWARD_AMOUNT;
         }
