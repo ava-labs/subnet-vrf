@@ -56,7 +56,8 @@ interface IVRFProvider is ITeleporterReceiver {
         address sourceSender,
         uint256 indexed proxyRequestID,
         uint256 indexed chainlinkVRFRequestID,
-        uint32 numWords
+        uint32 numWords,
+        address indexed consumer
     );
 
     /**

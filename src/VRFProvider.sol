@@ -139,7 +139,7 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
         }
 
         // Decode the request.
-        (VRFRequestInfo memory request) = abi.decode(message, (VRFRequestInfo));
+        (VRFRequestInfo memory request, address consumer) = abi.decode(message, (VRFRequestInfo, address));
         // gas opt
         uint256 proxyRequestID = request.requestID;
         uint32 numWords = request.numWords;
@@ -159,7 +159,7 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
         uint256 chainlinkVRFRequestID = requestRandomness(total, request.minimumRequestConfirmations, numWords);
 
         emit VRFRequestReceived(
-            sourceBlockchainID, originSenderAddress, proxyRequestID, chainlinkVRFRequestID, numWords
+            sourceBlockchainID, originSenderAddress, proxyRequestID, chainlinkVRFRequestID, numWords, consumer
         );
 
         _requests[chainlinkVRFRequestID] = InternalRequestInfo({
