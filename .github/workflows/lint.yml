@@ -37,7 +37,7 @@ jobs:
 
       - name: Install Foundry
         run: ./scripts/install_foundry.sh
-      
+
       - name: Check Solidity Formatting
         run: |
           export PATH=$PATH:$HOME/.foundry/bin

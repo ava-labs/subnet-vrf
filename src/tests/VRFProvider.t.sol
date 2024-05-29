@@ -194,7 +194,9 @@ contract VRFProviderTest is Test {
             request.numWords,
             address(this) // consumer
         );
-        provider.receiveTeleporterMessage(MOCK_VRF_PROXY_BLOCKCHAIN_ID, MOCK_VRF_PROXY_ADDRESS, abi.encode(request, address(this)));
+        provider.receiveTeleporterMessage(
+            MOCK_VRF_PROXY_BLOCKCHAIN_ID, MOCK_VRF_PROXY_ADDRESS, abi.encode(request, address(this))
+        );
     }
 
     function _getMockVRFRequestInfo() internal pure returns (VRFRequestInfo memory) {
