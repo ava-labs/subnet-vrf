@@ -12,7 +12,7 @@ source $REPO_BASE_PATH/.env
 
 # Retrieve the user address from private key
 user_address=$(cast wallet address --private-key $user_private_key)
-
+link_amount="5000000000000000000"
 # Calculate the next expected contract address for the given deployer on both the C-Chain and Subnet.
 # These nonces/addresses will be used to deploy the VRF Provider and Proxy contracts to.
 
@@ -87,7 +87,7 @@ echo "Deployed VRFConsumer to Subnet: $vrf_consumer_mock_address."
 
 # Approve the deployed VRFProxy for Subnet Id on VRFProxyRegistry
 echo "Approving VRFProxy on VRFProxyRegistry..."
-cast call $vrf_proxy_registry_address \
+cast send $vrf_proxy_registry_address \
   "addProxies(bytes32,address[])" \
   $subnet_blockchain_id "[$vrf_proxy_address]" \
   --private-key $user_private_key --rpc-url $c_chain_url \
@@ -96,8 +96,24 @@ echo "VRFProxy Approved."
 
 # Approve the deployed VRFConsumer on VRFConsumerRegistry
 echo "Approving VRFConsumer on VRFConsumerRegistry..."
-cast call $vrf_consumer_registry_address \
-  "addConsumers(address[])" "[$vrf_consumer_registry_address]" \
+cast send $vrf_consumer_registry_address \
+  "addConsumers(address[])" "[$vrf_consumer_mock_address]" \
   --private-key $user_private_key --rpc-url $subnet_url \
   > /dev/null
 echo "VRFConsumer Approved."
+
+# Approve $LINK to the VRFProvider
+echo "Approving \$LINK to the VRFProvider..."
+cast send $c_chain_link_token_address \
+  "approve(address,uint256)" $vrf_provider_address $link_amount \
+  --private-key $user_private_key --rpc-url $c_chain_url \
+  > /dev/null
+echo "\$LINK Approved."
+
+# Deposit $Link to the VRFProvider
+echo "Depositing \$LINK to the VRFProvider..."
+cast send $vrf_provider_address \
+  "deposit(uint256)" $link_amount \
+  --private-key $user_private_key --rpc-url $c_chain_url \
+  > /dev/null
+echo "\$LINK Deposited."
