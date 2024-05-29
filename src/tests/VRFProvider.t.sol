@@ -39,7 +39,8 @@ contract VRFProviderTest is Test {
         address sourceSender,
         uint256 indexed proxyRequestID,
         uint256 indexed chainlinkVRFRequestID,
-        uint32 numWords
+        uint32 numWords,
+        address indexed consumer
     );
     event VRFRequestFulfilled(uint256 indexed proxyRequestID, uint256 indexed chainlinkVRFRequestID, uint32 numWords);
     event Payment(address indexed proxyAddress, uint256 indexed proxyRequestID, uint256 total);
@@ -114,7 +115,7 @@ contract VRFProviderTest is Test {
         vm.prank(MOCK_TELEPOTER_MESSENGER_ADDRESS);
         vm.expectRevert(IVRFProvider.InvalidProxyRequestID.selector);
         provider.receiveTeleporterMessage(
-            MOCK_VRF_PROXY_BLOCKCHAIN_ID, MOCK_VRF_PROXY_ADDRESS, abi.encode(mockRequestInfo)
+            MOCK_VRF_PROXY_BLOCKCHAIN_ID, MOCK_VRF_PROXY_ADDRESS, abi.encode(mockRequestInfo, address(this))
         );
     }
 
@@ -189,9 +190,10 @@ contract VRFProviderTest is Test {
             MOCK_VRF_PROXY_ADDRESS,
             request.requestID,
             mockChainlinkVRFRequestID,
-            request.numWords
+            request.numWords,
+            address(this) // consumer
         );
-        provider.receiveTeleporterMessage(MOCK_VRF_PROXY_BLOCKCHAIN_ID, MOCK_VRF_PROXY_ADDRESS, abi.encode(request));
+        provider.receiveTeleporterMessage(MOCK_VRF_PROXY_BLOCKCHAIN_ID, MOCK_VRF_PROXY_ADDRESS, abi.encode(request, address(this)));
     }
 
     function _getMockVRFRequestInfo() internal pure returns (VRFRequestInfo memory) {
