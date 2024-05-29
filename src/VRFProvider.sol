@@ -158,6 +158,7 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
         // Pass the request on the Chainlink VRF coordinator
         uint256 chainlinkVRFRequestID = requestRandomness(total, request.minimumRequestConfirmations, numWords);
 
+        // solhint-disable-next-line
         emit VRFRequestReceived(
             sourceBlockchainID, originSenderAddress, proxyRequestID, chainlinkVRFRequestID, numWords, consumer
         );
