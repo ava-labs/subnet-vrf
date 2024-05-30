@@ -9,6 +9,7 @@ REPO_BASE_PATH=$(
 )
 
 source $REPO_BASE_PATH/.env
+source $REPO_BASE_PATH/config
 
 # Retrieve the user address from private key
 user_address=$(cast wallet address --private-key $user_private_key)
