@@ -4,20 +4,17 @@
 [![Unit Tests](https://github.com/NIMA-Enterprises/subnet-vrf/actions/workflows/test.yml/badge.svg)](https://github.com/NIMA-Enterprises/subnet-vrf/actions/workflows/test.yml)
 <!---[![Slither Static Analysis](https://github.com/NIMA-Enterprises/subnet-vrf/actions/workflows/slither.yml/badge.svg)](https://github.com/NIMA-Enterprises/subnet-vrf/actions/workflows/slither.yml)--->
 
-## Foundry
+## Architecture
+Architecture is modular and consists of 4 smart-contracts:
+- `VRFProvider` -> A singleton c-chain contract, takes `$LINK` deposits and is a gateway for VRF requests from subnets. Verifies that a call is coming from a verified subnet proxy and forwards the request to Chainlink.
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+- `VRFProxyRegistry` -> A singleton c-chain contract, being the registry of supported/official subnet proxies. It enables seamless VRFProvider migrations/upgrades. Inherits access-control.
 
-Foundry consists of:
+- `VRFProxy` -> A smart contract deployed per subnet, serving as a gateway for VRF requests of consumers of a specific subnet. Verifies that a call is coming from a verified consumer and forwards the request to c-chain VRFProvider through the Teleporter.
 
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+- `VRFConsumerRegistry` -> A smart contract deployed per subnet, the registry of allowed consumers. It enables seamless VRFProxy migrations/upgrades. Inherits access-control.
 
-## Documentation
-
-https://book.getfoundry.sh/
+Bonus: - `MockConsumer` -> Simple example testing contract, number guessing game. Once you call `takeAGuess()` VRF request will be sent through the arch. In a short while you will be able to check a response and see if it's fulfilled.
 
 ## Usage
 
@@ -39,34 +36,22 @@ $ forge test
 $ forge fmt
 ```
 
-### Gas Snapshots
-
-```shell
-$ forge snapshot
-```
-
-### Anvil
-
-```shell
-$ anvil
-```
-
 ### Deploy
 
+Deployment script deploys the 4 main contracts + mock consumer for testing
+
 ```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
+$ ./scripts/deploy.sh
 ```
 
-### Cast
+### Test Arch
+
+Mock consumer provides features of a basic guessing game. Using the following scripts you can make a guess of a random number and later check if the request has been fulfilled.
 
 ```shell
-$ cast <subcommand>
+$ ./scripts/takeAGuess.sh
 ```
 
-### Help
-
 ```shell
-$ forge --help
-$ anvil --help
-$ cast --help
+$ ./scripts/checkResponse.sh
 ```
