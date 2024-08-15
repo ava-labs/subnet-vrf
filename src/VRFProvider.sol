@@ -43,7 +43,7 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
     /// @inheritdoc IVRFProvider
     function addFunders(address[] calldata funders) external onlyOwner {
         uint256 length = funders.length;
-        for (uint256 i; i < length; i++) {
+        for (uint256 i; i < length; ++i) {
             address funder = funders[i];
             if (!authorizedFunders[funder] && funder != address(0)) {
                 authorizedFunders[funder] = true;
@@ -55,7 +55,7 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
     /// @inheritdoc IVRFProvider
     function removeFunders(address[] calldata funders) external onlyOwner {
         uint256 length = funders.length;
-        for (uint256 i; i < length; i++) {
+        for (uint256 i; i < length; ++i) {
             address funder = funders[i];
             if (authorizedFunders[funder] && funder != address(0)) {
                 delete authorizedFunders[funder];
