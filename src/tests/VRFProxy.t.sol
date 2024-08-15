@@ -146,7 +146,8 @@ contract VRFProxyTest is Test {
             requestID: expectedRequestID,
             minimumRequestConfirmations: mockMinConfs,
             callbackGasLimit: mockCallbackGasLimit,
-            numWords: mockNumWords
+            numWords: mockNumWords,
+            consumer: address(this)
         });
         // Construct the teleporter message input.
         TeleporterMessageInput memory tmi = TeleporterMessageInput({
@@ -155,7 +156,7 @@ contract VRFProxyTest is Test {
             feeInfo: TeleporterFeeInfo({feeTokenAddress: address(0), amount: 0}),
             requiredGasLimit: vrfProxy.VRF_REQUEST_REQUIRED_GAS(),
             allowedRelayerAddresses: new address[](0),
-            message: abi.encode(expectedRequest, address(this))
+            message: abi.encode(expectedRequest)
         });
 
         // Create precise mock call and expectation.

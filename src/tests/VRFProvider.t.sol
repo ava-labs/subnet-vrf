@@ -199,8 +199,8 @@ contract VRFProviderTest is Test {
         );
     }
 
-    function _getMockVRFRequestInfo() internal pure returns (VRFRequestInfo memory) {
+    function _getMockVRFRequestInfo() internal view returns (VRFRequestInfo memory) {
         return
-            VRFRequestInfo({requestID: 543, minimumRequestConfirmations: 200, callbackGasLimit: 200_000, numWords: 1});
+            VRFRequestInfo({requestID: 543, minimumRequestConfirmations: 200, callbackGasLimit: 200_000, numWords: 1, consumer: address(this)});
     }
 }

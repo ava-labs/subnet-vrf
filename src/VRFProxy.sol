@@ -52,7 +52,8 @@ contract VRFProxy is IVRFProxy, TeleporterOwnerUpgradeable {
             requestID: nonce,
             minimumRequestConfirmations: minimumRequestConfirmations,
             callbackGasLimit: callbackGasLimit,
-            numWords: numWords
+            numWords: numWords,
+            consumer: msg.sender
         });
 
         // Store the address requesting the random value to be called
@@ -68,7 +69,7 @@ contract VRFProxy is IVRFProxy, TeleporterOwnerUpgradeable {
                 feeInfo: TeleporterFeeInfo({feeTokenAddress: address(0), amount: 0}),
                 requiredGasLimit: VRF_REQUEST_REQUIRED_GAS,
                 allowedRelayerAddresses: new address[](0),
-                message: abi.encode(requestInfo, msg.sender)
+                message: abi.encode(requestInfo)
             })
         );
 
