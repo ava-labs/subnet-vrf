@@ -35,6 +35,9 @@ interface IVRFProxy is ITeleporterReceiver {
     error InvalidSourceBlockchainID();
     error CallerNotVRFProvider();
     error InvalidRequestID();
+    error MinimumRequestConfirmationsIsOutOfBounds();
+    error NumberOfRequestedWordsIsOverTheLimit();
+    error InvalidValue();
 
     /**
      * @notice Request a set of random words.

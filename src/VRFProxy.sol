@@ -23,6 +23,11 @@ contract VRFProxy is IVRFProxy, TeleporterOwnerUpgradeable {
     /// @inheritdoc IVRFProxy
     mapping(uint256 requestID => address requester) public requesters;
 
+    /// Chainlink Avalanche values
+    uint16 public minimumConfirmations = 0;
+    uint16 public constant MAXIMUM_CONFIRMATIONS = 200;
+    uint32 public constant MAXIMUM_RANDOM_WORDS = 500;
+
     /// @inheritdoc IVRFProxy
     uint256 public constant VRF_REQUEST_REQUIRED_GAS = 500_000;
 
@@ -40,12 +45,22 @@ contract VRFProxy is IVRFProxy, TeleporterOwnerUpgradeable {
         vrfProviderBlockchainID = vrfProviderBlockchainID_;
     }
 
+    function setMinimumConfirmations(uint16 minimumConfirmations_) external onlyOwner {
+        if (minimumConfirmations_ > MAXIMUM_CONFIRMATIONS) revert InvalidValue();
+        minimumConfirmations = minimumConfirmations_;
+    }
+
     /// @inheritdoc IVRFProxy
     function requestRandomWords(uint16 minimumRequestConfirmations, uint32 callbackGasLimit, uint32 numWords)
         external
         returns (uint256)
     {
         if (!vrfConsumerRegistry.isApprovedConsumer(msg.sender)) revert CallerIsNotAnApprovedConsumer();
+        if (minimumRequestConfirmations < minimumConfirmations || minimumRequestConfirmations > MAXIMUM_CONFIRMATIONS) {
+            revert MinimumRequestConfirmationsIsOutOfBounds();
+        }
+        if (numWords > MAXIMUM_RANDOM_WORDS) revert NumberOfRequestedWordsIsOverTheLimit();
+
         // Assign the next nonce to be used at the request ID.
         uint256 nonce = ++requestNonce;
         VRFRequestInfo memory requestInfo = VRFRequestInfo({
