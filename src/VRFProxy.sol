@@ -9,7 +9,7 @@ import {
     TeleporterMessageInput, TeleporterFeeInfo
 } from "@teleporter/contracts/src/Teleporter/ITeleporterMessenger.sol";
 import {TeleporterOwnerUpgradeable} from "@teleporter/contracts/src/Teleporter/upgrades/TeleporterOwnerUpgradeable.sol";
-import {VRFV2WrapperConsumerBase} from "@chainlink/contracts/src/v0.8/vrf/VRFV2WrapperConsumerBase.sol";
+import {VRFV2PlusWrapperConsumerBase} from "@chainlink/contracts/src/v0.8/vrf/dev/VRFV2PlusWrapperConsumerBase.sol";
 
 contract VRFProxy is IVRFProxy, TeleporterOwnerUpgradeable {
     /// @inheritdoc IVRFProxy
@@ -115,7 +115,7 @@ contract VRFProxy is IVRFProxy, TeleporterOwnerUpgradeable {
 
         // Pass the result to the destination with the exact gas limit.
         bytes memory resp =
-            abi.encodeCall(VRFV2WrapperConsumerBase.rawFulfillRandomWords, (requestID, response.randomWords));
+            abi.encodeCall(VRFV2PlusWrapperConsumerBase.rawFulfillRandomWords, (requestID, response.randomWords));
 
         // Call with explicitly the amount of callback gas requested.
         // Note that _callWithExactGas will revert if we do not have sufficient gas
