@@ -14,7 +14,7 @@ contract VRFProxyRegistry is IVRFProxyRegistry, AccessControl {
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
         _grantRole(PROXY_MANAGER, admin);
         uint256 length = proxyManagers.length;
-        for (uint256 i; i < length; i++) {
+        for (uint256 i; i < length; ++i) {
             _grantRole(PROXY_MANAGER, proxyManagers[i]);
         }
     }
@@ -23,7 +23,7 @@ contract VRFProxyRegistry is IVRFProxyRegistry, AccessControl {
     function addProxies(bytes32 blockchainID, address[] calldata proxies) external onlyRole(PROXY_MANAGER) {
         if (blockchainID == bytes32(0)) revert InvalidBlockchainID();
         uint256 length = proxies.length;
-        for (uint256 i; i < length; i++) {
+        for (uint256 i; i < length; ++i) {
             address proxy = proxies[i];
             if (!isApprovedProxy[blockchainID][proxy] && proxy != address(0)) {
                 isApprovedProxy[blockchainID][proxy] = true;
@@ -36,7 +36,7 @@ contract VRFProxyRegistry is IVRFProxyRegistry, AccessControl {
     function removeProxies(bytes32 blockchainID, address[] calldata proxies) external onlyRole(DEFAULT_ADMIN_ROLE) {
         if (blockchainID == bytes32(0)) revert InvalidBlockchainID();
         uint256 length = proxies.length;
-        for (uint256 i; i < length; i++) {
+        for (uint256 i; i < length; ++i) {
             address proxy = proxies[i];
             if (isApprovedProxy[blockchainID][proxy] && proxy != address(0)) {
                 delete isApprovedProxy[blockchainID][proxy];
