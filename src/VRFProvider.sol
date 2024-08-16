@@ -12,9 +12,9 @@ import {TeleporterOwnerUpgradeable} from "@teleporter/contracts/src/Teleporter/u
 
 contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerUpgradeable {
     /// @inheritdoc IVRFProvider
-    uint256 public balance;
+    IVRFProxyRegistry public immutable vrfProxyRegistry;
     /// @inheritdoc IVRFProvider
-    IVRFProxyRegistry public vrfProxyRegistry;
+    uint256 public balance;
     /// @inheritdoc IVRFProvider
     mapping(address account => bool isAllowedToDeposit) public authorizedFunders;
     /**
