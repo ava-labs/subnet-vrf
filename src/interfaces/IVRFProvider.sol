@@ -41,7 +41,9 @@ interface IVRFProvider is ITeleporterReceiver {
     /**
      * @dev Emitted when $LINK payment has been made with purpose of a VRF request creation.
      */
-    event Payment(bytes32 indexed sourceBlockchainID, address indexed proxyAddress, uint256 indexed proxyRequestID, uint256 total);
+    event Payment(
+        bytes32 indexed sourceBlockchainID, address indexed proxyAddress, uint256 indexed proxyRequestID, uint256 total
+    );
 
     /**
      * @dev Emitted when a message is received from the partner VRFProxy requesting random values.

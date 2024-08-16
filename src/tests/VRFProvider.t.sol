@@ -43,7 +43,9 @@ contract VRFProviderTest is Test {
         address indexed consumer
     );
     event VRFRequestFulfilled(uint256 indexed proxyRequestID, uint256 indexed chainlinkVRFRequestID, uint32 numWords);
-    event Payment(bytes32 indexed sourceBlockchainId, address indexed proxyAddress, uint256 indexed proxyRequestID, uint256 total);
+    event Payment(
+        bytes32 indexed sourceBlockchainId, address indexed proxyAddress, uint256 indexed proxyRequestID, uint256 total
+    );
 
     function setUp() public virtual {
         vm.mockCall(
