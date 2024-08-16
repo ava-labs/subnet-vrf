@@ -76,7 +76,7 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
 
     /// @inheritdoc IVRFProvider
     function withdraw(uint256 amount) external onlyOwner {
-        if (balance >= amount) revert InsufficientBalance();
+        if (balance < amount) revert InsufficientBalance();
         unchecked {
             balance -= amount;
         }
