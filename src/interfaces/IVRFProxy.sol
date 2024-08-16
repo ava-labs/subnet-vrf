@@ -35,6 +35,16 @@ interface IVRFProxy is ITeleporterReceiver {
     error InvalidSourceBlockchainID();
     error CallerNotVRFProvider();
     error InvalidRequestID();
+    error MinimumRequestConfirmationsIsOutOfBounds();
+    error NumberOfRequestedWordsIsOverTheLimit();
+    error InvalidValue();
+
+    /**
+     * @dev Function to set new minimumConfirmations value.
+     * This value reflects Chainlink's minimumConfirmations setting for a chain to which VRFProvider is deployed (Avalanche C-Chain).
+     * It is modifiable inside the Chainlink config, so it should the same way on our end too.
+     */
+    function setMinimumConfirmations(uint16 minimumConfirmations_) external;
 
     /**
      * @notice Request a set of random words.
