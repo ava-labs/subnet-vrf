@@ -71,7 +71,7 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
         unchecked {
             balance += amount;
         }
-        emit Deposit(amount);
+        emit Deposit(msg.sender, amount);
     }
 
     /// @inheritdoc IVRFProvider
@@ -153,7 +153,7 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
             balance -= total;
         }
 
-        emit Payment(originSenderAddress, proxyRequestID, total);
+        emit Payment(sourceBlockchainID, originSenderAddress, proxyRequestID, total);
 
         // Pass the request on the Chainlink VRF coordinator
         uint256 chainlinkVRFRequestID = requestRandomness(total, request.minimumRequestConfirmations, numWords);
