@@ -30,7 +30,7 @@ contract VRFProvider is IVRFProvider, VRFV2PlusWrapperConsumerBase, TeleporterOw
 
     constructor(address teleporterRegistryAddress_, address vrfProxyRegistry_, address vrfV2PlusWrapper_, address link_)
         TeleporterOwnerUpgradeable(teleporterRegistryAddress_, msg.sender)
-        VRFV2PlusWrapperConsumerBase(link_, vrfV2PlusWrapper_)    
+        VRFV2PlusWrapperConsumerBase(link_, vrfV2PlusWrapper_)
     {
         if (vrfProxyRegistry_ == address(0)) revert VRFProxyRegistryAddressIsZero();
         vrfProxyRegistry = IVRFProxyRegistry(vrfProxyRegistry_);
