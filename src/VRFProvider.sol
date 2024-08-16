@@ -10,6 +10,7 @@ import {
 } from "@teleporter/contracts/src/Teleporter/ITeleporterMessenger.sol";
 import {TeleporterOwnerUpgradeable} from "@teleporter/contracts/src/Teleporter/upgrades/TeleporterOwnerUpgradeable.sol";
 
+/// @custom:security-contact security.alerts@nima.enterprises
 contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerUpgradeable {
     /// @inheritdoc IVRFProvider
     IVRFProxyRegistry public immutable vrfProxyRegistry;

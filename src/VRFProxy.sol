@@ -11,6 +11,7 @@ import {
 import {TeleporterOwnerUpgradeable} from "@teleporter/contracts/src/Teleporter/upgrades/TeleporterOwnerUpgradeable.sol";
 import {VRFV2WrapperConsumerBase} from "@chainlink/contracts/src/v0.8/vrf/VRFV2WrapperConsumerBase.sol";
 
+/// @custom:security-contact security.alerts@nima.enterprises
 contract VRFProxy is IVRFProxy, TeleporterOwnerUpgradeable {
     /// @inheritdoc IVRFProxy
     IVRFConsumerRegistry public immutable vrfConsumerRegistry;
