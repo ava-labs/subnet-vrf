@@ -167,8 +167,8 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
         _requests[chainlinkVRFRequestID] = InternalRequestInfo({
             sourceBlockchainID: sourceBlockchainID,
             originSenderAddress: originSenderAddress,
-            proxyRequestID: proxyRequestID,
-            messageCallbackGasLimit: request.callbackGasLimit
+            messageCallbackGasLimit: request.callbackGasLimit,
+            proxyRequestID: proxyRequestID
         });
     }
 }

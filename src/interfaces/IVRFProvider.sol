@@ -14,8 +14,8 @@ interface IVRFProvider is ITeleporterReceiver {
     struct InternalRequestInfo {
         bytes32 sourceBlockchainID;
         address originSenderAddress;
-        uint256 proxyRequestID;
         uint32 messageCallbackGasLimit;
+        uint256 proxyRequestID;
     }
 
     /**
