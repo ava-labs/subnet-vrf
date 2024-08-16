@@ -1,4 +1,4 @@
-// SPDX-License-IDentifier: UNLICENSED
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.18;
 
 import {IAccessControl} from "@openzeppelin/contracts@4.8.1/access/IAccessControl.sol";
@@ -14,7 +14,7 @@ interface IVRFConsumerRegistry is IAccessControl {
     event ConsumerRemoved(address indexed consumer);
 
     /**
-     * @dev Function add consumers.
+     * @dev Function to add consumers.
      */
     function addConsumers(address[] calldata consumers) external;
     /**
