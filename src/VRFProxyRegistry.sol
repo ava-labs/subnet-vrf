@@ -4,6 +4,7 @@ pragma solidity 0.8.18;
 import {IVRFProxyRegistry} from "./interfaces/IVRFProxyRegistry.sol";
 import {AccessControl} from "@openzeppelin/contracts@4.8.1/access/AccessControl.sol";
 
+/// @custom:security-contact security.alerts@nima.enterprises
 contract VRFProxyRegistry is IVRFProxyRegistry, AccessControl {
     /// @inheritdoc IVRFProxyRegistry
     mapping(bytes32 blockchainID => mapping(address proxy => bool approved)) public isApprovedProxy;
