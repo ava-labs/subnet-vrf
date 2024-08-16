@@ -145,7 +145,8 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
         uint32 numWords = request.numWords;
         if (proxyRequestID == 0) revert InvalidProxyRequestID();
 
-        uint32 callbackGasLimit = TELEPORTER_CALLBACK_GAS_LIMIT_BASE + (TELEPORTER_CALLBACK_GAS_LIMIT_PER_WORD * numWords);
+        uint32 callbackGasLimit =
+            TELEPORTER_CALLBACK_GAS_LIMIT_BASE + (TELEPORTER_CALLBACK_GAS_LIMIT_PER_WORD * numWords);
 
         uint256 requestPrice = VRF_V2_WRAPPER.calculateRequestPrice(callbackGasLimit);
 
@@ -158,7 +159,8 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
         emit Payment(originSenderAddress, proxyRequestID, requestPrice);
 
         // Pass the request on the Chainlink VRF coordinator
-        uint256 chainlinkVRFRequestID = requestRandomness(callbackGasLimit, request.minimumRequestConfirmations, numWords);
+        uint256 chainlinkVRFRequestID =
+            requestRandomness(callbackGasLimit, request.minimumRequestConfirmations, numWords);
 
         // solhint-disable-next-line
         emit VRFRequestReceived(

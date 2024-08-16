@@ -170,7 +170,8 @@ contract VRFProviderTest is Test {
     }
 
     function _submitVRFRequest(VRFRequestInfo memory request, uint256 mockChainlinkVRFRequestID) internal {
-        uint32 callbackGasLimit = TELEPORTER_CALLBACK_GAS_LIMIT_BASE + (TELEPORTER_CALLBACK_GAS_LIMIT_PER_WORD * request.numWords);
+        uint32 callbackGasLimit =
+            TELEPORTER_CALLBACK_GAS_LIMIT_BASE + (TELEPORTER_CALLBACK_GAS_LIMIT_PER_WORD * request.numWords);
         uint256 requestPrice = uint256(5 * 1e18);
         vm.mockCall(
             MOCK_CHAINLINK_VRF_WRAPPER_ADDRESS,
