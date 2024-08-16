@@ -67,10 +67,10 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
     /// @inheritdoc IVRFProvider
     function deposit(uint256 amount) external {
         if (!authorizedFunders[msg.sender] && msg.sender != owner()) revert NotAnAuthorizedFunder();
-        LINK.transferFrom(msg.sender, address(this), amount);
         unchecked {
             balance += amount;
         }
+        LINK.transferFrom(msg.sender, address(this), amount);
         emit Deposit(amount);
     }
 
