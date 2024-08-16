@@ -140,7 +140,7 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
         }
 
         // Decode the request.
-        (VRFRequestInfo memory request, address consumer) = abi.decode(message, (VRFRequestInfo, address));
+        (VRFRequestInfo memory request) = abi.decode(message, (VRFRequestInfo));
         // gas opt
         uint256 proxyRequestID = request.requestID;
         uint32 numWords = request.numWords;
@@ -161,7 +161,7 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
 
         // solhint-disable-next-line
         emit VRFRequestReceived(
-            sourceBlockchainID, originSenderAddress, proxyRequestID, chainlinkVRFRequestID, numWords, consumer
+            sourceBlockchainID, originSenderAddress, proxyRequestID, chainlinkVRFRequestID, numWords, request.consumer
         );
 
         _requests[chainlinkVRFRequestID] = InternalRequestInfo({
