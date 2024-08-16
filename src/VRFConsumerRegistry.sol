@@ -15,7 +15,7 @@ contract VRFConsumerRegistry is IVRFConsumerRegistry, AccessControl {
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
         _grantRole(CONSUMER_MANAGER, admin);
         uint256 length = consumerManagers.length;
-        for (uint256 i; i < length; i++) {
+        for (uint256 i; i < length; ++i) {
             _grantRole(CONSUMER_MANAGER, consumerManagers[i]);
         }
     }
@@ -23,7 +23,7 @@ contract VRFConsumerRegistry is IVRFConsumerRegistry, AccessControl {
     /// @inheritdoc IVRFConsumerRegistry
     function addConsumers(address[] calldata consumers) external onlyRole(CONSUMER_MANAGER) {
         uint256 length = consumers.length;
-        for (uint256 i; i < length; i++) {
+        for (uint256 i; i < length; ++i) {
             address consumer = consumers[i];
             if (!isApprovedConsumer[consumer] && consumer != address(0)) {
                 isApprovedConsumer[consumer] = true;
@@ -35,7 +35,7 @@ contract VRFConsumerRegistry is IVRFConsumerRegistry, AccessControl {
     /// @inheritdoc IVRFConsumerRegistry
     function removeConsumers(address[] calldata consumers) external onlyRole(DEFAULT_ADMIN_ROLE) {
         uint256 length = consumers.length;
-        for (uint256 i; i < length; i++) {
+        for (uint256 i; i < length; ++i) {
             address consumer = consumers[i];
             if (isApprovedConsumer[consumer] && consumer != address(0)) {
                 delete isApprovedConsumer[consumer];
