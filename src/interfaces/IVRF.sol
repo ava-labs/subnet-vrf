@@ -11,6 +11,7 @@ struct VRFRequestInfo {
     uint16 minimumRequestConfirmations;
     uint32 callbackGasLimit;
     uint32 numWords;
+    address consumer;
 }
 
 /**
