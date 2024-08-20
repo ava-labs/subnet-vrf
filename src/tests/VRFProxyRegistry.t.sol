@@ -39,7 +39,7 @@ contract VRFProxyRegistryTest is Test {
     function testFailToAddProxiesDueToInvalidBlockchainID() public {
         bytes4 expectedSelector = IVRFProxyRegistry.InvalidBlockchainID.selector;
         assertEq(expectedSelector, "0x6b1b9f5d");
-        
+
         proxies = new address[](1);
         proxies[0] = address(0x5555);
         vm.expectRevert("0x6b1b9f5d");

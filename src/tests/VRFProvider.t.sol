@@ -203,7 +203,7 @@ contract VRFProviderTest is Test {
     function testFailToWithdrawDueToInsufficientBalance() public {
         bytes4 expectedSelector = IVRFProvider.NotAnAuthorizedFunder.selector;
         assertEq(expectedSelector, "0xf4d678b8");
-        
+
         vm.expectRevert("0xf4d678b8");
         provider.withdraw(10 ** 24);
     }
