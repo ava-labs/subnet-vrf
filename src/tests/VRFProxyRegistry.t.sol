@@ -2,18 +2,7 @@
 pragma solidity 0.8.18;
 
 import {Test} from "forge-std/Test.sol";
-import {IVRFProvider, VRFProvider} from "../VRFProvider.sol";
 import {IVRFProxyRegistry, VRFProxyRegistry} from "../VRFProxyRegistry.sol";
-import {LinkToken} from "../mocks/LinkToken.sol";
-import {VRFRequestInfo, VRFResponseInfo} from "../interfaces/IVRF.sol";
-import {VRFV2WrapperInterface} from "@chainlink/contracts/src/v0.8/vrf/interfaces/VRFV2WrapperInterface.sol";
-import {TeleporterRegistry} from "@teleporter/contracts/src/Teleporter/upgrades/TeleporterRegistry.sol";
-import {
-    ITeleporterMessenger,
-    TeleporterMessageInput,
-    TeleporterFeeInfo
-} from "@teleporter/contracts/src/Teleporter/ITeleporterMessenger.sol";
-import "forge-std/Console.sol";
 
 contract VRFProxyRegistryTest is Test {
     bytes32 public constant MOCK_VRF_PROXY_BLOCKCHAIN_ID =
@@ -49,7 +38,8 @@ contract VRFProxyRegistryTest is Test {
 
     function testFailToAddProxiesDueToInvalidBlockchainID() public {
         bytes4 expectedSelector = IVRFProxyRegistry.InvalidBlockchainID.selector;
-        require(expectedSelector == 0x6b1b9f5d, "Selector mismatch!");
+        assertEq(expectedSelector, "0x6b1b9f5d");
+        
         proxies = new address[](1);
         proxies[0] = address(0x5555);
         vm.expectRevert("0x6b1b9f5d");
@@ -67,7 +57,8 @@ contract VRFProxyRegistryTest is Test {
 
     function testFailToRemoveProxiesDueToInvalidBlockchainID() public {
         bytes4 expectedSelector = IVRFProxyRegistry.InvalidBlockchainID.selector;
-        require(expectedSelector == 0x6b1b9f5d, "Selector mismatch!");
+        assertEq(expectedSelector, "0x6b1b9f5d");
+
         proxies = new address[](1);
         proxies[0] = address(0x5555);
         vm.expectRevert("0x6b1b9f5d");

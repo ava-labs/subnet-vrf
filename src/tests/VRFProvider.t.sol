@@ -90,7 +90,7 @@ contract VRFProviderTest is Test {
 
     function testFailToSetupDueToZeroVRFProxyRegistryAddress() public {
         bytes4 expectedSelector = IVRFProvider.VRFProxyRegistryAddressIsZero.selector;
-        require(expectedSelector == 0x6cce6344, "Selector mismatch!");
+        assertEq(expectedSelector, "0x6cce6344");
 
         vm.expectRevert("0x6cce6344");
         new VRFProvider(
@@ -100,7 +100,7 @@ contract VRFProviderTest is Test {
 
     function testFailToDepositDueToNoAuthorizedFunder() public {
         bytes4 expectedSelector = IVRFProvider.NotAnAuthorizedFunder.selector;
-        require(expectedSelector == 0xaff7cd14, "Selector mismatch!");
+        assertEq(expectedSelector, "0xaff7cd14");
 
         address nonFunder = vm.addr(0x5555);
         linkToken.approve(address(this), 10 ** 18);
@@ -202,8 +202,8 @@ contract VRFProviderTest is Test {
 
     function testFailToWithdrawDueToInsufficientBalance() public {
         bytes4 expectedSelector = IVRFProvider.NotAnAuthorizedFunder.selector;
-        require(expectedSelector == 0xf4d678b8, "Selector mismatch!");
-
+        assertEq(expectedSelector, "0xf4d678b8");
+        
         vm.expectRevert("0xf4d678b8");
         provider.withdraw(10 ** 24);
     }
