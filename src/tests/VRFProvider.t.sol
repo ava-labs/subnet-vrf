@@ -194,36 +194,6 @@ contract VRFProviderTest is Test {
         provider.rawFulfillRandomWords(123, mockRandomWords);
     }
 
-    function _submitVRFRequest(VRFRequestInfo memory request, uint256 mockChainlinkVRFRequestID) internal {
-        uint32 total = TELEPORTER_CALLBACK_GAS_LIMIT_BASE + (TELEPORTER_CALLBACK_GAS_LIMIT_PER_WORD * request.numWords);
-        vm.mockCall(
-            MOCK_CHAINLINK_VRF_WRAPPER_ADDRESS,
-            abi.encodeCall(VRFV2WrapperInterface.calculateRequestPrice, (total)),
-            abi.encode(uint256(300 * 1e18))
-        );
-        vm.mockCall(
-            MOCK_CHAINLINK_VRF_WRAPPER_ADDRESS,
-            abi.encodeCall(VRFV2WrapperInterface.lastRequestId, ()),
-            abi.encode(mockChainlinkVRFRequestID)
-        );
-        vm.prank(MOCK_TELEPOTER_MESSENGER_ADDRESS);
-        vm.expectEmit(true, true, true, true, address(provider));
-        emit Payment(MOCK_VRF_PROXY_ADDRESS, request.requestID, total);
-        vm.expectEmit(true, true, true, true, address(provider));
-        // solhint-disable-next-line
-        emit VRFRequestReceived(
-            MOCK_VRF_PROXY_BLOCKCHAIN_ID,
-            MOCK_VRF_PROXY_ADDRESS,
-            request.requestID,
-            mockChainlinkVRFRequestID,
-            request.numWords,
-            address(this) // consumer
-        );
-        provider.receiveTeleporterMessage(
-            MOCK_VRF_PROXY_BLOCKCHAIN_ID, MOCK_VRF_PROXY_ADDRESS, abi.encode(request, address(this))
-        );
-    }
-
     function testWithdrawSuccess() public {
         vm.expectEmit(true, true, true, true, address(provider));
         emit Withdraw(10 ** 18);
@@ -253,6 +223,36 @@ contract VRFProviderTest is Test {
         vm.expectEmit(true, true, true, true, address(provider));
         emit FunderRemoved(address(0x5555));
         provider.removeFunders(funders);
+    }
+
+    function _submitVRFRequest(VRFRequestInfo memory request, uint256 mockChainlinkVRFRequestID) internal {
+        uint32 total = TELEPORTER_CALLBACK_GAS_LIMIT_BASE + (TELEPORTER_CALLBACK_GAS_LIMIT_PER_WORD * request.numWords);
+        vm.mockCall(
+            MOCK_CHAINLINK_VRF_WRAPPER_ADDRESS,
+            abi.encodeCall(VRFV2WrapperInterface.calculateRequestPrice, (total)),
+            abi.encode(uint256(300 * 1e18))
+        );
+        vm.mockCall(
+            MOCK_CHAINLINK_VRF_WRAPPER_ADDRESS,
+            abi.encodeCall(VRFV2WrapperInterface.lastRequestId, ()),
+            abi.encode(mockChainlinkVRFRequestID)
+        );
+        vm.prank(MOCK_TELEPOTER_MESSENGER_ADDRESS);
+        vm.expectEmit(true, true, true, true, address(provider));
+        emit Payment(MOCK_VRF_PROXY_ADDRESS, request.requestID, total);
+        vm.expectEmit(true, true, true, true, address(provider));
+        // solhint-disable-next-line
+        emit VRFRequestReceived(
+            MOCK_VRF_PROXY_BLOCKCHAIN_ID,
+            MOCK_VRF_PROXY_ADDRESS,
+            request.requestID,
+            mockChainlinkVRFRequestID,
+            request.numWords,
+            address(this) // consumer
+        );
+        provider.receiveTeleporterMessage(
+            MOCK_VRF_PROXY_BLOCKCHAIN_ID, MOCK_VRF_PROXY_ADDRESS, abi.encode(request, address(this))
+        );
     }
 
     function _getMockVRFRequestInfo() internal pure returns (VRFRequestInfo memory) {
