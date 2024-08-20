@@ -14,8 +14,8 @@ import {
     TeleporterFeeInfo
 } from "@teleporter/contracts/src/Teleporter/ITeleporterMessenger.sol";
 import "forge-std/Console.sol";
-contract VRFProxyRegistryTest is Test {
 
+contract VRFProxyRegistryTest is Test {
     bytes32 public constant MOCK_VRF_PROXY_BLOCKCHAIN_ID =
         bytes32(hex"1234567812345678123456781234567812345678123456781234567812345678");
     address public constant MOCK_VRF_PROXY_ADDRESS = address(0x4444);
@@ -30,7 +30,6 @@ contract VRFProxyRegistryTest is Test {
     event ProxyRemoved(bytes32 indexed blockchainID, address indexed proxy);
 
     function setUp() public virtual {
-
         managers = new address[](1);
         managers[0] = address(this);
         proxies = new address[](1);
@@ -74,5 +73,4 @@ contract VRFProxyRegistryTest is Test {
         vm.expectRevert("0x6b1b9f5d");
         vrfProxyRegistry.removeProxies(bytes32(0), proxies);
     }
-
 }

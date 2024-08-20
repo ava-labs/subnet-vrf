@@ -93,7 +93,9 @@ contract VRFProviderTest is Test {
         require(expectedSelector == 0x6cce6344, "Selector mismatch!");
 
         vm.expectRevert("0x6cce6344");
-        new VRFProvider(MOCK_TELEPORTER_REGISTRY_ADDRESS, address(0), MOCK_CHAINLINK_VRF_WRAPPER_ADDRESS, address(linkToken));
+        new VRFProvider(
+            MOCK_TELEPORTER_REGISTRY_ADDRESS, address(0), MOCK_CHAINLINK_VRF_WRAPPER_ADDRESS, address(linkToken)
+        );
     }
 
     function testFailToDepositDueToNoAuthorizedFunder() public {
@@ -107,7 +109,7 @@ contract VRFProviderTest is Test {
         vm.expectRevert("0xaff7cd14");
         provider.deposit(10 ** 18);
     }
-    
+
     function testReceiveTeleporterMessageSuccess() public {
         VRFRequestInfo memory mockRequestInfo = _getMockVRFRequestInfo();
         uint256 mockChainlinkVRFRequestID = 111222;
