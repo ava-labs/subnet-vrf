@@ -44,9 +44,9 @@ contract VRFProviderTest is Test {
     );
     event VRFRequestFulfilled(uint256 indexed proxyRequestID, uint256 indexed chainlinkVRFRequestID, uint32 numWords);
     event Payment(address indexed proxyAddress, uint256 indexed proxyRequestID, uint256 total);
+    event Withdraw(uint256 amount);
     event FunderAdded(address indexed funder);
     event FunderRemoved(address indexed funder);
-    event Withdraw(uint256 amount);
 
     function setUp() public virtual {
         vm.mockCall(
