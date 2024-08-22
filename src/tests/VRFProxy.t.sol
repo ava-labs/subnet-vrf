@@ -77,6 +77,27 @@ contract VRFProxyTest is Test {
         );
     }
 
+    function testSetUpToFailDueToVRFProviderZeroAddress() public {
+        vm.expectRevert(IVRFProxy.VRFProviderAddressIsZero.selector);
+        new VRFProxy(
+            MOCK_TELEPORTER_REGISTRY_ADDRESS, address(vrfConsumerRegistry), MOCK_VRF_PROVIDER_BLOCKCHAIN_ID, address(0)
+        );
+    }
+
+    function testSetUpToFailDueToVRFConsumerRegistryZeroAddress() public {
+        vm.expectRevert(IVRFProxy.VRFConsumerRegistryAddressIsZero.selector);
+        new VRFProxy(
+            MOCK_TELEPORTER_REGISTRY_ADDRESS, address(0), MOCK_VRF_PROVIDER_BLOCKCHAIN_ID, MOCK_VRF_PROVIDER_ADDRESS
+        );
+    }
+
+    function testSetUpToFailDueToVRFProviderBlockchainIDZero() public {
+        vm.expectRevert(IVRFProxy.VRFProviderBlockchainIDIsZero.selector);
+        new VRFProxy(
+            MOCK_TELEPORTER_REGISTRY_ADDRESS, address(vrfConsumerRegistry), bytes32(0), MOCK_VRF_PROVIDER_ADDRESS
+        );
+    }
+
     function testAddConsumerSucess() public {
         _addConsumer(MOCK_CONSUMER);
     }
