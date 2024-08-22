@@ -77,6 +77,36 @@ contract VRFProxyTest is Test {
         );
     }
 
+    function testFailToSetUpDueToVRFProviderZeroAddress() public {
+        bytes4 expectedSelector = IVRFProxy.VRFProviderAddressIsZero.selector;
+        assertEq(expectedSelector, "0x7500e31d");
+
+        vm.expectRevert("0x7500e31d");
+        new VRFProxy(
+            MOCK_TELEPORTER_REGISTRY_ADDRESS, address(vrfConsumerRegistry), MOCK_VRF_PROVIDER_BLOCKCHAIN_ID, address(0)
+        );
+    }
+
+    function testFailToSetUpDueToVRFConsumerRegistryZeroAddress() public {
+        bytes4 expectedSelector = IVRFProxy.VRFConsumerRegistryAddressIsZero.selector;
+        assertEq(expectedSelector, "0x7f3b1b5b");
+
+        vm.expectRevert("0x7f3b1b5b");
+        new VRFProxy(
+            MOCK_TELEPORTER_REGISTRY_ADDRESS, address(0), MOCK_VRF_PROVIDER_BLOCKCHAIN_ID, MOCK_VRF_PROVIDER_ADDRESS
+        );
+    }
+
+    function testFailToSetUpDueToVRFProviderBlockchainIDZero() public {
+        bytes4 expectedSelector = IVRFProxy.VRFProviderBlockchainIDIsZero.selector;
+        assertEq(expectedSelector, "0x5627cebe");
+
+        vm.expectRevert("0x5627cebe");
+        new VRFProxy(
+            MOCK_TELEPORTER_REGISTRY_ADDRESS, address(vrfConsumerRegistry), bytes32(0), MOCK_VRF_PROVIDER_ADDRESS
+        );
+    }
+
     function testAddConsumerSucess() public {
         _addConsumer(MOCK_CONSUMER);
     }

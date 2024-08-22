@@ -44,6 +44,9 @@ contract VRFProviderTest is Test {
     );
     event VRFRequestFulfilled(uint256 indexed proxyRequestID, uint256 indexed chainlinkVRFRequestID, uint32 numWords);
     event Payment(address indexed proxyAddress, uint256 indexed proxyRequestID, uint256 total);
+    event Withdraw(uint256 amount);
+    event FunderAdded(address indexed funder);
+    event FunderRemoved(address indexed funder);
 
     function setUp() public virtual {
         vm.mockCall(
@@ -83,6 +86,28 @@ contract VRFProviderTest is Test {
 
         linkToken.approve(address(provider), 10 ** 23);
         provider.deposit(10 ** 23);
+    }
+
+    function testFailToSetupDueToZeroVRFProxyRegistryAddress() public {
+        bytes4 expectedSelector = IVRFProvider.VRFProxyRegistryAddressIsZero.selector;
+        assertEq(expectedSelector, "0x6cce6344");
+
+        vm.expectRevert("0x6cce6344");
+        new VRFProvider(
+            MOCK_TELEPORTER_REGISTRY_ADDRESS, address(0), MOCK_CHAINLINK_VRF_WRAPPER_ADDRESS, address(linkToken)
+        );
+    }
+
+    function testFailToDepositDueToNoAuthorizedFunder() public {
+        bytes4 expectedSelector = IVRFProvider.NotAnAuthorizedFunder.selector;
+        assertEq(expectedSelector, "0xaff7cd14");
+
+        address nonFunder = vm.addr(0x5555);
+        linkToken.approve(address(this), 10 ** 18);
+        linkToken.transferFrom(address(this), nonFunder, 10 ** 18);
+        vm.prank(nonFunder);
+        vm.expectRevert("0xaff7cd14");
+        provider.deposit(10 ** 18);
     }
 
     function testReceiveTeleporterMessageSuccess() public {
@@ -167,6 +192,37 @@ contract VRFProviderTest is Test {
         vm.expectRevert(IVRFProvider.InvalidChainlinkVRFRequestID.selector);
         vm.prank(MOCK_CHAINLINK_VRF_WRAPPER_ADDRESS);
         provider.rawFulfillRandomWords(123, mockRandomWords);
+    }
+
+    function testWithdrawSuccess() public {
+        vm.expectEmit(true, true, true, true, address(provider));
+        emit Withdraw(10 ** 18);
+        provider.withdraw(10 ** 18);
+    }
+
+    function testFailToWithdrawDueToInsufficientBalance() public {
+        bytes4 expectedSelector = IVRFProvider.NotAnAuthorizedFunder.selector;
+        assertEq(expectedSelector, "0xf4d678b8");
+
+        vm.expectRevert("0xf4d678b8");
+        provider.withdraw(10 ** 24);
+    }
+
+    function testAddFundersSuccess() public {
+        address[] memory funders = new address[](1);
+        funders[0] = address(0x5555);
+        vm.expectEmit(true, true, true, true, address(provider));
+        emit FunderAdded(address(0x5555));
+        provider.addFunders(funders);
+    }
+
+    function testRemoveFundersSuccess() public {
+        address[] memory funders = new address[](1);
+        funders[0] = address(0x5555);
+        provider.addFunders(funders);
+        vm.expectEmit(true, true, true, true, address(provider));
+        emit FunderRemoved(address(0x5555));
+        provider.removeFunders(funders);
     }
 
     function _submitVRFRequest(VRFRequestInfo memory request, uint256 mockChainlinkVRFRequestID) internal {
