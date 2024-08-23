@@ -7,6 +7,12 @@ import {IVRFConsumerRegistry} from "./IVRFConsumerRegistry.sol";
 interface IVRFProxy is ITeleporterReceiver {
     /**
      * @dev Emmited when a request for random words is made.
+     * @param requestID is a local request id.
+     * @param requester is an address/consumer which made the request.
+     * @param minimumRequestConfirmations - How many blocks you'd like the VRF service on the partner chain to wait prior
+     * to fulfilling the request once the VRF provider submits the request on the partner chain.
+     * @param callbackGasLimit - How much gas needs to be provided to the fulfillRandomWords call to complete this randomness request.
+     * @param numWords - The number of uint256 values requested.
      */
     event RandomWordsRequested(
         uint256 indexed requestID,
@@ -74,6 +80,7 @@ interface IVRFProxy is ITeleporterReceiver {
 
     /**
      * @dev The address that request the random values for each request ID.
+     * @param requestID is the local request id per network per proxy.
      */
     function requesters(uint256 requestID) external view returns (address);
 
