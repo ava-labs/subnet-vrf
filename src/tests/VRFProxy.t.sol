@@ -1,17 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.18;
+pragma solidity 0.8.25;
 
 import {Test} from "forge-std/Test.sol";
 import {VRFProxy, IVRFProxy} from "../VRFProxy.sol";
 import {VRFRequestInfo, VRFResponseInfo} from "../interfaces/IVRF.sol";
 import {VRFConsumerRegistry} from "../VRFConsumerRegistry.sol";
-import {TeleporterRegistry} from "@teleporter/contracts/src/Teleporter/upgrades/TeleporterRegistry.sol";
-import {
-    ITeleporterMessenger,
-    TeleporterMessageInput,
-    TeleporterFeeInfo
-} from "@teleporter/contracts/src/Teleporter/ITeleporterMessenger.sol";
+import {TeleporterRegistry} from "@teleporter/registry/TeleporterRegistry.sol";
+import {ITeleporterMessenger, TeleporterMessageInput, TeleporterFeeInfo} from "@teleporter/ITeleporterMessenger.sol";
 import {VRFConsumer} from "../mocks/VRFConsumer.sol";
+import {IAccessControl} from "@openzeppelin/contracts@5.0.2/access/IAccessControl.sol";
 
 contract VRFProxyTest is Test {
     address public constant MOCK_TELEPOTER_MESSENGER_ADDRESS = address(0x1111);
@@ -22,6 +19,8 @@ contract VRFProxyTest is Test {
     address public constant MOCK_VRF_PROVIDER_ADDRESS = address(0x3333);
     address public constant MOCK_CONSUMER = address(0x4444);
     address public constant NON_OWNER_ADDRESS = address(0x6666);
+    bytes32 public constant CONSUMER_MANAGER = keccak256("CONSUMER_MANAGER");
+    bytes32 public constant DEFAULT_ADMIN_ROLE = bytes32(0);
 
     VRFConsumerRegistry public vrfConsumerRegistry;
     VRFProxy public vrfProxy;
@@ -89,7 +88,9 @@ contract VRFProxyTest is Test {
 
     function testAddConsumerNotOwner() public {
         vm.expectRevert(
-            "AccessControl: account 0x0000000000000000000000000000000000006666 is missing role 0x795edd50d89cf0f09d5fb90f6c834853abd2897512ea74c56cf89c0a94b5da8b"
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, NON_OWNER_ADDRESS, CONSUMER_MANAGER
+            )
         );
         vm.prank(NON_OWNER_ADDRESS);
         vrfConsumerRegistry.addConsumers(consumers);
@@ -124,7 +125,9 @@ contract VRFProxyTest is Test {
 
     function testRemoveConsumerNotOwner() public {
         vm.expectRevert(
-            "AccessControl: account 0x0000000000000000000000000000000000006666 is missing role 0x0000000000000000000000000000000000000000000000000000000000000000"
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, NON_OWNER_ADDRESS, DEFAULT_ADMIN_ROLE
+            )
         );
         // NON_OWNER_ADDRESS does not have the DEFAULT_ADMIN_ROLE
         vm.prank(NON_OWNER_ADDRESS);
