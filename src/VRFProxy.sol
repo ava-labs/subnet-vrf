@@ -45,6 +45,7 @@ contract VRFProxy is IVRFProxy, TeleporterOwnerUpgradeable {
         external
         returns (uint256)
     {
+        // Ensure that caller is an approved consumer.
         if (!vrfConsumerRegistry.isApprovedConsumer(msg.sender)) revert CallerIsNotAnApprovedConsumer();
         // Assign the next nonce to be used at the request ID.
         uint256 nonce = ++requestNonce;
@@ -105,7 +106,7 @@ contract VRFProxy is IVRFProxy, TeleporterOwnerUpgradeable {
         // gas opt
         uint256 requestID = response.requestID;
 
-        // Look up the requester.
+        // Ensure the validity of the requestID.
         address requester = requesters[requestID];
         if (requester == address(0)) revert InvalidRequestID();
 
