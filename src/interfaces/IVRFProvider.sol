@@ -80,6 +80,7 @@ interface IVRFProvider is ITeleporterReceiver {
     error InvalidProxyRequestID();
     error InvalidChainlinkVRFRequestID();
     error VRFProxyRegistryAddressIsZero();
+    error RequestNotCached();
 
     /**
      * @dev Function to add authorized funders
