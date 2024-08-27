@@ -33,7 +33,7 @@ contract VRFConsumerRegistry is IVRFConsumerRegistry, AccessControl {
     }
 
     /// @inheritdoc IVRFConsumerRegistry
-    function removeConsumers(address[] calldata consumers) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function removeConsumers(address[] calldata consumers) external onlyRole(CONSUMER_MANAGER) {
         uint256 length = consumers.length;
         for (uint256 i; i < length; ++i) {
             address consumer = consumers[i];

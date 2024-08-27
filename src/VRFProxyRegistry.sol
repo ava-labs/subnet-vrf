@@ -33,7 +33,7 @@ contract VRFProxyRegistry is IVRFProxyRegistry, AccessControl {
     }
 
     /// @inheritdoc IVRFProxyRegistry
-    function removeProxies(bytes32 blockchainID, address[] calldata proxies) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function removeProxies(bytes32 blockchainID, address[] calldata proxies) external onlyRole(PROXY_MANAGER) {
         if (blockchainID == bytes32(0)) revert InvalidBlockchainID();
         uint256 length = proxies.length;
         for (uint256 i; i < length; ++i) {
