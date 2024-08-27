@@ -90,30 +90,28 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
     }
 
     /**
-     * @dev Function to manually bridge a response that was either made when teleporter was paused
-     * or when execution was reverted due to low callback gas limit.
+     * @dev Function to manually bridge a response that took place when teleporter was paused.
      * @param chainlinkVRFRequestID is an ID of a chainlink VRF request.
-     * @param customGasLimit is customGasLimit for cross chain message execution.
-     * @dev If you want to keep the initial gas limit setting forward 0 for customGasLimit value.
      */
-    function bridgeResponse(uint256 chainlinkVRFRequestID, uint256 customGasLimit) external {
-        InternalRequestInfo memory requestInfo = _requests[chainlinkVRFRequestID];
+    function bridgeResponse(uint256 chainlinkVRFRequestID) external {
+        // Check if the reponse for the requested vrf request is cached
         VRFResponseInfo memory response = _responses[chainlinkVRFRequestID];
+        if (response.requestID == 0) revert RequestNotCached();
 
-        uint256 gasLimit = customGasLimit > 0
-            ? customGasLimit
-            : requestInfo.messageCallbackGasLimit + TELEPORTER_RECEIVE_MESSAGE_GAS_OVERHEAD;
+        InternalRequestInfo memory requestInfo = _requests[chainlinkVRFRequestID];
 
         _getTeleporterMessenger().sendCrossChainMessage(
             TeleporterMessageInput({
                 destinationBlockchainID: requestInfo.sourceBlockchainID,
                 destinationAddress: requestInfo.originSenderAddress,
                 feeInfo: TeleporterFeeInfo({feeTokenAddress: address(0), amount: 0}),
-                requiredGasLimit: gasLimit,
+                requiredGasLimit: requestInfo.messageCallbackGasLimit + TELEPORTER_RECEIVE_MESSAGE_GAS_OVERHEAD,
                 allowedRelayerAddresses: new address[](0),
                 message: abi.encode(response)
             })
         );
+
+        delete _responses[chainlinkVRFRequestID];
     }
 
     /**
@@ -141,12 +139,12 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
             callbackGasLimit: requestInfo.messageCallbackGasLimit
         });
 
-        // Store response data
-        _responses[chainlinkVRFRequestID] = response;
-
         // Check teleported status (if it is paused or not) before executing the cross chain message
         // If teleporter is paused, the response can be manually bridged.
-        if (!isTeleporterAddressPaused(address(_getTeleporterMessenger()))) {
+        if (isTeleporterAddressPaused(address(_getTeleporterMessenger()))) {
+            // Store the response
+            _responses[chainlinkVRFRequestID] = response;
+        } else {
             _getTeleporterMessenger().sendCrossChainMessage(
                 TeleporterMessageInput({
                     destinationBlockchainID: requestInfo.sourceBlockchainID,
