@@ -122,9 +122,9 @@ contract VRFProxyTest is Test {
         assertEq(vm.getRecordedLogs().length, 0);
     }
 
-    function testRemoveConsumerNotOwner() public {
+    function testRemoveConsumerNotManager() public {
         vm.expectRevert(
-            "AccessControl: account 0x0000000000000000000000000000000000006666 is missing role 0x0000000000000000000000000000000000000000000000000000000000000000"
+            "AccessControl: account 0x0000000000000000000000000000000000006666 is missing role 0x795edd50d89cf0f09d5fb90f6c834853abd2897512ea74c56cf89c0a94b5da8b"
         );
         // NON_OWNER_ADDRESS does not have the DEFAULT_ADMIN_ROLE
         vm.prank(NON_OWNER_ADDRESS);
