@@ -21,7 +21,7 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
     /**
      * @dev Tracks response information, manual response bridging support.
      */
-    mapping(uint256 chainlinkVRFRequestID => VRFResponseInfo response) public _responses;
+    mapping(uint256 chainlinkVRFRequestID => VRFResponseInfo response) public cachedResponses;
     /**
      * @dev Tracks the request information by the Chainlink VRF request ID.
      */
@@ -95,7 +95,7 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
      */
     function bridgeResponse(uint256 chainlinkVRFRequestID) external {
         // Check if the reponse for the requested vrf request is cached
-        VRFResponseInfo memory response = _responses[chainlinkVRFRequestID];
+        VRFResponseInfo memory response = cachedResponses[chainlinkVRFRequestID];
         if (response.requestID == 0) revert RequestNotCached();
 
         InternalRequestInfo memory requestInfo = _requests[chainlinkVRFRequestID];
@@ -111,7 +111,7 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
             })
         );
 
-        delete _responses[chainlinkVRFRequestID];
+        delete cachedResponses[chainlinkVRFRequestID];
     }
 
     /**
@@ -143,7 +143,7 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
         // If teleporter is paused, the response can be manually bridged.
         if (isTeleporterAddressPaused(address(_getTeleporterMessenger()))) {
             // Store the response
-            _responses[chainlinkVRFRequestID] = response;
+            cachedResponses[chainlinkVRFRequestID] = response;
         } else {
             _getTeleporterMessenger().sendCrossChainMessage(
                 TeleporterMessageInput({
