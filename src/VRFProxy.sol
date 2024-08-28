@@ -4,7 +4,6 @@ pragma solidity 0.8.18;
 import {IVRFConsumerRegistry} from "./interfaces/IVRFConsumerRegistry.sol";
 import {IVRFProxy} from "./interfaces/IVRFProxy.sol";
 import {VRFRequestInfo, VRFResponseInfo} from "./interfaces/IVRF.sol";
-import {GasUtils} from "./libraries/GasUtils.sol";
 import {
     TeleporterMessageInput, TeleporterFeeInfo
 } from "@teleporter/contracts/src/Teleporter/ITeleporterMessenger.sol";
@@ -116,10 +115,16 @@ contract VRFProxy is IVRFProxy, TeleporterOwnerUpgradeable {
         bytes memory resp =
             abi.encodeCall(VRFV2WrapperConsumerBase.rawFulfillRandomWords, (requestID, response.randomWords));
 
+        // Revert if gasleft is under specified callbackGasLimit, but allow greater values.
+        if (gasleft() < response.callbackGasLimit) revert InsufficientGas();
+
         // Call with explicitly the amount of callback gas requested.
         // Note that _callWithExactGas will revert if we do not have sufficient gas
         // to give the callee their requested amount.
-        bool success = GasUtils._callWithExactGas(response.callbackGasLimit, requester, resp);
-        emit RandomWordsFulfilled(requestID, success);
+        // solhint-disable-next-line
+        (bool success,) = requester.call(resp);
+        if (!success) revert RawFulfillRandomWordsCallFailed(requester, resp);
+
+        emit RandomWordsFulfilled(requestID);
     }
 }
