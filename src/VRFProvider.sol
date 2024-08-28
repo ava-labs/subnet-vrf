@@ -20,7 +20,7 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
     /// @inheritdoc IVRFProvider
     mapping(address account => bool isAllowedToDeposit) public authorizedFunders;
     /**
-     * @dev Double mapping tracking the proxy spending data
+     * @dev Double mapping tracking the proxy profiles containing their spending data - part of allowance system.
      */
     mapping(bytes32 blockchainID => mapping(address proxy => ProxyProfile proxyProfile)) public proxyProfiles;
     /**
@@ -178,7 +178,7 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
         if (!vrfProxyRegistry.isApprovedProxy(sourceBlockchainID, originSenderAddress)) {
             revert InvalidCallerOrSourceChainID();
         }
-        // Retrieve proxy spendings data
+        // Retrieve proxy profile containing spendings data.
         ProxyProfile storage profile = proxyProfiles[sourceBlockchainID][originSenderAddress];
 
         // Decode the request.
