@@ -142,7 +142,7 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
             revert InvalidCallerOrSourceChainID();
         }
         // Retrieve proxy spendings data.
-        ProxySpendings storage _proxySpendings = proxySpendings[sourceBlockchainID][originSenderAddress];
+        ProxySpendings storage proxySpendings_ = proxySpendings[sourceBlockchainID][originSenderAddress];
 
         // Decode the request.
         (VRFRequestInfo memory request, address consumer) = abi.decode(message, (VRFRequestInfo, address));
@@ -158,15 +158,15 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
         // Determine the current day.
         uint256 day = block.timestamp / 86400;
         // Once a new day approaches the spendings are reset.
-        if (_proxySpendings.day > day) {
-            _proxySpendings.day = day;
-            _proxySpendings.spendings = total;
+        if (proxySpendings_.day > day) {
+            proxySpendings_.day = day;
+            proxySpendings_.spendings = total;
         } else {
-            _proxySpendings.spendings += total;
+            proxySpendings_.spendings += total;
         }
         // If allowance is reached - revert.
-        if (_proxySpendings.spendings > allowance) {
-            revert AllowanceLimitReached(sourceBlockchainID, originSenderAddress, _proxySpendings.day);
+        if (proxySpendings_.spendings > allowance) {
+            revert AllowanceLimitReached(sourceBlockchainID, originSenderAddress, proxySpendings_.day);
         }
 
         // Ensure that stakeholder has enough balance
