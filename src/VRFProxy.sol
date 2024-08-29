@@ -111,10 +111,6 @@ contract VRFProxy is IVRFProxy, TeleporterOwnerUpgradeable {
         // Clear the requesting address since the request is now fulfilled.
         delete requesters[requestID];
 
-        // Pass the result to the destination with the exact gas limit.
-        bytes memory resp =
-            abi.encodeCall(VRFV2WrapperConsumerBase.rawFulfillRandomWords, (requestID, response.randomWords));
-
         // Revert if gasleft is under specified callbackGasLimit, but allow greater values.
         if (gasleft() < response.callbackGasLimit) revert InsufficientGas();
 
@@ -122,8 +118,7 @@ contract VRFProxy is IVRFProxy, TeleporterOwnerUpgradeable {
         // Note that _callWithExactGas will revert if we do not have sufficient gas
         // to give the callee their requested amount.
         // solhint-disable-next-line
-        (bool success,) = requester.call(resp);
-        if (!success) revert RawFulfillRandomWordsCallFailed(requester, resp);
+        VRFV2WrapperConsumerBase(requester).rawFulfillRandomWords(requestID, response.randomWords);
 
         emit RandomWordsFulfilled(requestID);
     }

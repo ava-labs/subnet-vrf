@@ -34,12 +34,6 @@ interface IVRFProxy is ITeleporterReceiver {
     error CallerNotVRFProvider();
     error InvalidRequestID();
     error InsufficientGas();
-    /**
-     * @dev Reverting when 'rawFulfillRandomWords' function call on 'requester' reverts.
-     * @param requester is an address of a contract which requested random words initially.
-     * @param call is a calldata sent to the requester.
-     */
-    error RawFulfillRandomWordsCallFailed(address requester, bytes call);
 
     /**
      * @notice Request a set of random words.
