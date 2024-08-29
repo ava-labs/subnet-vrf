@@ -25,6 +25,7 @@ contract VRFProviderTest is Test {
 
     address[] public managers;
     address[] public proxies;
+    uint256[] public allowances;
 
     VRFProvider public provider;
     VRFProxyRegistry public vrfProxyRegistry;
@@ -69,9 +70,11 @@ contract VRFProviderTest is Test {
         managers[0] = address(this);
         proxies = new address[](1);
         proxies[0] = MOCK_VRF_PROXY_ADDRESS;
+        allowances = new uint256[](1);
+        allowances[0] = 0;
 
         vrfProxyRegistry = new VRFProxyRegistry(address(this), managers);
-        vrfProxyRegistry.addProxies(MOCK_VRF_PROXY_BLOCKCHAIN_ID, proxies);
+        vrfProxyRegistry.addProxies(MOCK_VRF_PROXY_BLOCKCHAIN_ID, proxies, allowances);
 
         linkToken = new LinkToken();
         provider = new VRFProvider(

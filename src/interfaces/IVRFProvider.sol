@@ -19,17 +19,14 @@ interface IVRFProvider is ITeleporterReceiver {
     }
 
     /**
-     * @dev Proxy profile is a structure containing all necessary values to implement autonomous allowance mechanism.
+     * @dev Proxy spendings structure containins necessary values to track in order to implement autonomous allowance mechanism.
      * @dev This allowance system enables proxies to have certain allowance on a daily basis, each day allowance is reset to a predetermined value.
-     * @param allowance is a variable which enables us to override defaultProxyAllowance for a certain proxy,
-     * if allowance is not set (or is set to 0) - then the default allowance will be applied.
      * @param day is an identifier of a day in which last request was made, it is set in order to track spendings in a certain day,
      * and reset spendings to zero once new day approaches.
      * @param spendings is a total of spendings made in a single day by a proxy (this variable will show value for the last day
      * in which proxy was used or just zero if it was never used).
      */
-    struct ProxyProfile {
-        uint256 allowance;
+    struct ProxySpendings {
         uint256 day;
         uint256 spendings;
     }
@@ -58,19 +55,6 @@ interface IVRFProvider is ITeleporterReceiver {
      * @dev Emitted when $LINK payment has been made with purpose of a VRF request creation.
      */
     event Payment(address indexed proxyAddress, uint256 indexed proxyRequestID, uint256 total);
-
-    /**
-     * @dev Emitted when defaultProxyAllowance value is set.
-     */
-    event DefaultProxyAllowanceSet(uint256 defaultProxyAllowance);
-
-    /**
-     * @dev Emitted when proxy specific allowance value is set.
-     * @param blockchainID is the id of a blockchain where proxy is deployed.
-     * @param proxy is an address of a proxy.
-     * @param allowance is newly set allowance value.
-     */
-    event ProxyAllowanceSet(bytes32 blockchainID, address proxy, uint256 allowance);
 
     /**
      * @dev Emitted when a message is received from the partner VRFProxy requesting random values.
@@ -109,14 +93,14 @@ interface IVRFProvider is ITeleporterReceiver {
     error InvalidProxyRequestID();
     error InvalidChainlinkVRFRequestID();
     error VRFProxyRegistryAddressIsZero();
-    error ArrayLengthMismatch();
     error InvalidProxyAddress();
     /**
      * @dev Reverting when proxy crosses its spending limit for the day.
      * @param sourceBlockchainID is the id of a blockchain where proxy is deployed.
      * @param originSenderAddress is a proxy address.
+     * @param day is an identifier of a day on which the event has occured.
      */
-    error AllowanceLimitReached(bytes32 sourceBlockchainID, address originSenderAddress);
+    error AllowanceLimitReached(bytes32 sourceBlockchainID, address originSenderAddress, uint256 day);
 
     /**
      * @dev Function to add authorized funders
@@ -139,36 +123,9 @@ interface IVRFProvider is ITeleporterReceiver {
     function withdraw(uint256 amount) external;
 
     /**
-     * @dev Function to set the default proxy allowance value.
-     * @param defaultProxyAllowance_ is a new value to be set as defaultProxyAllowance.
-     */
-    function setDefaultProxyAllowance(uint256 defaultProxyAllowance_) external;
-
-    /**
-     * @dev Function to override allowance for a certain set of proxies.
-     * @param blockchainID is an id of a network to which proxies are deployed.
-     * @param proxies is a set of proxies to override allowance for.
-     * @param allowances is a set of allowances to set for each specified proxy in the order of input.
-     */
-    function setProxyAllowances(bytes32 blockchainID, address[] calldata proxies, uint256[] calldata allowances)
-        external;
-
-    /**
-     * @dev Function to retrieve allowance value of a specified proxy.
-     * @param blockchainID is the id of a blockchain where proxy is deployed.
-     * @param proxy is an address of a proxy.
-     */
-    function getAllowanceForProxy(bytes32 blockchainID, address proxy) external view returns (uint256);
-
-    /**
      * @dev Variable containing the $LINK balance, deposited by the official authorities.
      */
     function balance() external view returns (uint256);
-
-    /**
-     * @dev Variable containing default daily $LINK allowance for authorized proxies.
-     */
-    function defaultProxyAllowance() external view returns (uint256);
 
     /**
      * @dev Variable containing the VRF Proxy Registry, contract used for management of proxies.

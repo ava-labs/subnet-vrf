@@ -14,15 +14,13 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
     /// @inheritdoc IVRFProvider
     uint256 public balance;
     /// @inheritdoc IVRFProvider
-    uint256 public defaultProxyAllowance = 1_000e18;
-    /// @inheritdoc IVRFProvider
     IVRFProxyRegistry public vrfProxyRegistry;
     /// @inheritdoc IVRFProvider
     mapping(address account => bool isAllowedToDeposit) public authorizedFunders;
     /**
-     * @dev Double mapping tracking the proxy profiles containing their spending data - part of allowance system.
+     * @dev Double mapping tracking the proxy spendings data - a part of the allowance system.
      */
-    mapping(bytes32 blockchainID => mapping(address proxy => ProxyProfile proxyProfile)) public proxyProfiles;
+    mapping(bytes32 blockchainID => mapping(address proxy => ProxySpendings proxySpendings)) public proxySpendings;
     /**
      * @dev Tracks the request information by the Chainlink VRF request ID.
      */
@@ -90,41 +88,6 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
         emit Withdraw(amount);
     }
 
-    /// @inheritdoc IVRFProvider
-    function setDefaultProxyAllowance(uint256 defaultProxyAllowance_) external onlyOwner {
-        defaultProxyAllowance = defaultProxyAllowance_;
-        emit DefaultProxyAllowanceSet(defaultProxyAllowance_);
-    }
-
-    /// @inheritdoc IVRFProvider
-    function setProxyAllowances(bytes32 blockchainID, address[] calldata proxies, uint256[] calldata allowances)
-        external
-        onlyOwner
-    {
-        // Gas optimization.
-        uint256 length = proxies.length;
-        // Revert on array mismatch.
-        if (length != allowances.length) revert ArrayLengthMismatch();
-        for (uint256 i; i < length; i++) {
-            // Gas optimization.
-            address proxy = proxies[i];
-            uint256 allowance = allowances[i];
-            // Ensure proxy being approved for interaction with VRFProvider.
-            if (!vrfProxyRegistry.isApprovedProxy(blockchainID, proxy)) {
-                revert InvalidCallerOrSourceChainID();
-            }
-            // Set new allowance value.
-            proxyProfiles[blockchainID][proxy].allowance = allowance;
-            emit ProxyAllowanceSet(blockchainID, proxy, allowance);
-        }
-    }
-
-    /// @inheritdoc IVRFProvider
-    function getAllowanceForProxy(bytes32 blockchainID, address proxy) external view returns (uint256) {
-        uint256 allowance = proxyProfiles[blockchainID][proxy].allowance;
-        return allowance != 0 ? allowance : defaultProxyAllowance;
-    }
-
     /**
      * @dev Fulfills the VRF request identified by the given request ID with the randomWords provided. Called from
      * VRFConsumerBaseV2, where authentication occurs requiring that the random words must be provided by the
@@ -178,8 +141,8 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
         if (!vrfProxyRegistry.isApprovedProxy(sourceBlockchainID, originSenderAddress)) {
             revert InvalidCallerOrSourceChainID();
         }
-        // Retrieve proxy profile containing spendings data.
-        ProxyProfile storage profile = proxyProfiles[sourceBlockchainID][originSenderAddress];
+        // Retrieve proxy spendings data.
+        ProxySpendings storage _proxySpendings = proxySpendings[sourceBlockchainID][originSenderAddress];
 
         // Decode the request.
         (VRFRequestInfo memory request, address consumer) = abi.decode(message, (VRFRequestInfo, address));
@@ -190,19 +153,21 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
 
         uint32 total = TELEPORTER_CALLBACK_GAS_LIMIT_BASE + (TELEPORTER_CALLBACK_GAS_LIMIT_PER_WORD * numWords);
 
-        // Determine allowance for the proxy, if an override is not set - use default.
-        uint256 allowance = profile.allowance != 0 ? profile.allowance : defaultProxyAllowance;
+        // Retrieve proxy allowance value from the registry.
+        uint256 allowance = vrfProxyRegistry.getProxyAllowance(sourceBlockchainID, originSenderAddress);
         // Determine the current day.
         uint256 day = block.timestamp / 86400;
         // Once a new day approaches the spendings are reset.
-        if (profile.day > day) {
-            profile.day = day;
-            profile.spendings = total;
+        if (_proxySpendings.day > day) {
+            _proxySpendings.day = day;
+            _proxySpendings.spendings = total;
         } else {
-            profile.spendings += total;
+            _proxySpendings.spendings += total;
         }
         // If allowance is reached - revert.
-        if (profile.spendings > allowance) revert AllowanceLimitReached(sourceBlockchainID, originSenderAddress);
+        if (_proxySpendings.spendings > allowance) {
+            revert AllowanceLimitReached(sourceBlockchainID, originSenderAddress, _proxySpendings.day);
+        }
 
         // Ensure that stakeholder has enough balance
         if (total > balance) revert InsufficientBalance();
