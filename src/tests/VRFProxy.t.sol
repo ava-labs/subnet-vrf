@@ -204,9 +204,7 @@ contract VRFProxyTest is Test {
             MOCK_CONSUMER, abi.encodeCall(consumer.rawFulfillRandomWords, (requestID, mockValues)), new bytes(0)
         );
         vm.expectCall(
-            MOCK_CONSUMER,
-            0,
-            abi.encodeWithSelector(consumer.rawFulfillRandomWords.selector, requestID, mockValues)
+            MOCK_CONSUMER, 0, abi.encodeWithSelector(consumer.rawFulfillRandomWords.selector, requestID, mockValues)
         );
         vm.expectEmit(true, true, true, true, address(vrfProxy));
         emit RandomWordsFulfilled(requestID);
