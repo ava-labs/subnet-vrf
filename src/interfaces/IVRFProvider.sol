@@ -11,7 +11,7 @@ interface IVRFProvider is ITeleporterReceiver {
      * back to the partner VRFCoorindator as part of the message to fulfill
      * the request.
      * @param sourceBlockchainID is an id of the origin network from which the request arrived.
-     * @param originSenderAddress is an address of a wallet which made a VRF request through proxy on the network of origin.
+     * @param originSenderAddress is an address of a proxy contract which forwarded consumer's request to the Teleporter on the network of origin.
      * @param proxyRequestID is an id of a request local to the proxy through which it was made.
      * @param messageCallbackGasLimit is a total value of gas limit being set for an execution of a request callback.
      */
@@ -57,11 +57,14 @@ interface IVRFProvider is ITeleporterReceiver {
 
     /**
      * @dev Emitted when a message is received from the partner VRFProxy requesting random values.
+     * @param blockchainID - an id of the origin network from which the request arrived.
+     * @param sourceSender - an address of a proxy contract which forwarded consumer's request to the Teleporter on the network of origin.
      * @param proxyRequestID - The request ID specified in the message from the VRFProxy. Separate from the
      * Chainlink VRF request ID assigned when the request is submitted to the Chainlink VRF coordinator.
      * @param chainlinkVRFRequestID - The request ID assigned by the Chainlink VRF coordinator for
      * the random value request. Separate from the proxy request ID.
      * @param numWords - The number of random uint256 words requested.
+     * @param consumer - an address of a wallet which made a VRF request through proxy on the network of origin.
      */
     event VRFRequestReceived(
         bytes32 blockchainID,
