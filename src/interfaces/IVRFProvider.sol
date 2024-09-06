@@ -74,6 +74,13 @@ interface IVRFProvider is ITeleporterReceiver {
     event VRFRequestFulfilled(uint256 indexed proxyRequestID, uint256 indexed chainlinkVRFRequestID, uint32 numWords);
 
     /**
+     * @dev Emitted once a request for random words is cached - this happens when the Teleporter is paused.
+     * @dev Cached responses can be bridged only manually.
+     * @param chainlinkVRFRequestID is an id of a request for which the received response was cached but not bridged.
+     */
+    event ResponseCached(uint256 indexed chainlinkVRFRequestID);
+
+    /**
      * Errors
      */
     error NotAnAuthorizedFunder();

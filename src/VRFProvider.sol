@@ -144,6 +144,7 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
         if (isTeleporterAddressPaused(address(_getTeleporterMessenger()))) {
             // Store the response
             cachedResponses[chainlinkVRFRequestID] = response;
+            emit ResponseCached(chainlinkVRFRequestID);
         } else {
             _getTeleporterMessenger().sendCrossChainMessage(
                 TeleporterMessageInput({
