@@ -139,7 +139,7 @@ contract VRFProxyTest is Test {
         uint256 expectedRequestID = vrfProxy.requestNonce() + 1;
         uint16 mockMinConfs = 1;
         uint32 mockCallbackGasLimit = 213_000;
-        uint32 mockNumWords = 20;
+        uint32 mockNumWords = 2;
 
         // Construct a request.
         VRFRequestInfo memory expectedRequest = VRFRequestInfo({
