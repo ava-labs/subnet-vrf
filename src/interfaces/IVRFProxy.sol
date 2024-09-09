@@ -26,6 +26,18 @@ interface IVRFProxy is ITeleporterReceiver {
     event RandomWordsFulfilled(uint256 indexed requestID, bool success);
 
     /**
+     * @dev Emitted when minimumConfirmations value has been set.
+     * @param minimumConfirmations is a newly set value.
+     */
+    event MinimumConfirmationsSet(uint16 minimumConfirmations);
+
+    /**
+     * @dev Emitted when maximumRandomWords value has been set.
+     * @param maximumRandomWords is a newly set value.
+     */
+    event MaximumRandomWordsSet(uint32 maximumRandomWords);
+
+    /**
      * Errors
      */
     error VRFProviderAddressIsZero();
@@ -41,10 +53,16 @@ interface IVRFProxy is ITeleporterReceiver {
 
     /**
      * @dev Function to set new minimumConfirmations value.
-     * This value reflects Chainlink's minimumConfirmations setting for a chain to which VRFProvider is deployed (Avalanche C-Chain).
+     * @param minimumConfirmations_ reflects Chainlink's minimumConfirmations setting for a chain to which VRFProvider is deployed (Avalanche C-Chain).
      * It is modifiable inside the Chainlink config, so it should the same way on our end too.
      */
     function setMinimumConfirmations(uint16 minimumConfirmations_) external;
+
+    /**
+     * @dev Function to set new maximumRandomWords value.
+     * @param maximumRandomWords_ limits the amount of random words to be requested at once.
+     */
+    function setMaximumRandomWords(uint32 maximumRandomWords_) external;
 
     /**
      * @notice Request a set of random words.
