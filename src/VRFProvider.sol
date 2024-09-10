@@ -156,9 +156,9 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
         // Retrieve proxy allowance value from the registry.
         uint256 allowance = vrfProxyRegistry.getProxyAllowance(sourceBlockchainID, originSenderAddress);
         // Determine the current day.
-        uint256 day = block.timestamp / 86400;
+        uint256 day = block.timestamp / 1 days;
         // Once a new day approaches the spendings are reset.
-        if (proxySpendings_.day > day) {
+        if (proxySpendings_.day < day) {
             proxySpendings_.day = day;
             proxySpendings_.spendings = total;
         } else {
@@ -166,7 +166,7 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
         }
         // If allowance is reached - revert.
         if (proxySpendings_.spendings > allowance) {
-            revert AllowanceLimitReached(sourceBlockchainID, originSenderAddress, proxySpendings_.day);
+            revert AllowanceLimitReached(sourceBlockchainID, originSenderAddress, day);
         }
 
         // Ensure that stakeholder has enough balance

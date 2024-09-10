@@ -6,7 +6,7 @@ import {AccessControl} from "@openzeppelin/contracts@4.8.1/access/AccessControl.
 
 contract VRFProxyRegistry is IVRFProxyRegistry, AccessControl {
     /// @inheritdoc IVRFProxyRegistry
-    uint256 public defaultProxyAllowance = 1_000e18;
+    uint256 public defaultProxyAllowance = 15e18;
     /// @inheritdoc IVRFProxyRegistry
     mapping(bytes32 blockchainID => mapping(address proxy => bool approved)) public isApprovedProxy;
     /**
@@ -40,9 +40,10 @@ contract VRFProxyRegistry is IVRFProxyRegistry, AccessControl {
     {
         // Gas optimization.
         uint256 length = proxies.length;
+        uint256 dpa = defaultProxyAllowance;
         // Revert on array mismatch.
         if (length != allowances.length) revert ArrayLengthMismatch();
-        for (uint256 i; i < length; i++) {
+        for (uint256 i; i < length; ++i) {
             // Gas optimization.
             address proxy = proxies[i];
             uint256 allowance = allowances[i];
@@ -52,7 +53,7 @@ contract VRFProxyRegistry is IVRFProxyRegistry, AccessControl {
             }
             // Set new allowance value.
             _proxyAllowances[blockchainID][proxy] = allowance;
-            emit ProxyAllowanceSet(blockchainID, proxy, allowance);
+            emit ProxyAllowanceSet(blockchainID, proxy, allowance == 0 ? dpa : allowance);
         }
     }
 
@@ -63,13 +64,16 @@ contract VRFProxyRegistry is IVRFProxyRegistry, AccessControl {
     {
         if (blockchainID == bytes32(0)) revert InvalidBlockchainID();
         uint256 length = proxies.length;
+        uint256 dpa = defaultProxyAllowance;
+        // Revert on array mismatch.
+        if (length != allowances.length) revert ArrayLengthMismatch();
         for (uint256 i; i < length; i++) {
             address proxy = proxies[i];
             if (!isApprovedProxy[blockchainID][proxy] && proxy != address(0)) {
                 uint256 allowance = allowances[i];
                 isApprovedProxy[blockchainID][proxy] = true;
                 if (allowance > 0) _proxyAllowances[blockchainID][proxy] = allowance;
-                emit ProxyAdded(blockchainID, proxy, allowance);
+                emit ProxyAdded(blockchainID, proxy, allowance == 0 ? dpa : allowance);
             }
         }
     }

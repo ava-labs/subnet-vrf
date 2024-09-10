@@ -27,7 +27,7 @@ interface IVRFProxyRegistry is IAccessControl {
     // Errors
     error InvalidBlockchainID();
     error ArrayLengthMismatch();
-    error UnauthorizedProxy(address proxy);
+    error UnauthorizedProxy(bytes32 blockchainID, address proxy);
 
     /**
      * @dev Function to set the default proxy allowance value.

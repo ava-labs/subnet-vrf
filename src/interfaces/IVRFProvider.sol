@@ -19,7 +19,7 @@ interface IVRFProvider is ITeleporterReceiver {
     }
 
     /**
-     * @dev Proxy spendings structure containins necessary values to track in order to implement autonomous allowance mechanism.
+     * @dev Proxy spendings structure contains necessary values to track in order to implement autonomous allowance mechanism.
      * @dev This allowance system enables proxies to have certain allowance on a daily basis, each day allowance is reset to a predetermined value.
      * @param day is an identifier of a day in which last request was made, it is set in order to track spendings in a certain day,
      * and reset spendings to zero once new day approaches.
