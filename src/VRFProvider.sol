@@ -31,7 +31,7 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterRegist
         address chainlinkVRFWrapper_,
         address link_
     )
-        TeleporterRegistryOwnableApp(teleporterRegistryAddress_, msg.sender)
+        TeleporterRegistryOwnableApp(teleporterRegistryAddress_, msg.sender, 1)
         VRFV2WrapperConsumerBase(link_, chainlinkVRFWrapper_)
     {
         if (vrfProxyRegistry_ == address(0)) revert VRFProxyRegistryAddressIsZero();

@@ -29,7 +29,7 @@ contract VRFProxy is IVRFProxy, TeleporterRegistryOwnableApp {
         address vrfConsumerRegistry_,
         bytes32 vrfProviderBlockchainID_,
         address vrfProviderAddress_
-    ) TeleporterRegistryOwnableApp(teleporterRegistryAddress_, msg.sender) {
+    ) TeleporterRegistryOwnableApp(teleporterRegistryAddress_, msg.sender, 1) {
         if (vrfProviderAddress_ == address(0)) revert VRFProviderAddressIsZero();
         vrfProviderAddress = vrfProviderAddress_;
         if (vrfConsumerRegistry_ == address(0)) revert VRFConsumerRegistryAddressIsZero();
