@@ -28,9 +28,9 @@ contract VRFProvider is IVRFProvider, VRFV2PlusWrapperConsumerBase, TeleporterOw
     uint32 public constant TELEPORTER_CALLBACK_GAS_LIMIT_PER_WORD = 5_000;
     uint32 public constant TELEPORTER_RECEIVE_MESSAGE_GAS_OVERHEAD = 300_000;
 
-    constructor(address teleporterRegistryAddress_, address vrfProxyRegistry_, address vrfV2PlusWrapper_, address link_)
+    constructor(address teleporterRegistryAddress_, address vrfProxyRegistry_, address vrfV2PlusWrapper_)
         TeleporterOwnerUpgradeable(teleporterRegistryAddress_, msg.sender)
-        VRFV2PlusWrapperConsumerBase(link_, vrfV2PlusWrapper_)
+        VRFV2PlusWrapperConsumerBase(vrfV2PlusWrapper_)
     {
         if (vrfProxyRegistry_ == address(0)) revert VRFProxyRegistryAddressIsZero();
         vrfProxyRegistry = IVRFProxyRegistry(vrfProxyRegistry_);
@@ -63,7 +63,7 @@ contract VRFProvider is IVRFProvider, VRFV2PlusWrapperConsumerBase, TeleporterOw
     /// @inheritdoc IVRFProvider
     function deposit(uint256 amount) external {
         if (!authorizedFunders[msg.sender] && msg.sender != owner()) revert NotAnAuthorizedFunder();
-        s_linkToken.transferFrom(msg.sender, address(this), amount);
+        i_linkToken.transferFrom(msg.sender, address(this), amount);
         unchecked {
             balance += amount;
         }
@@ -76,7 +76,7 @@ contract VRFProvider is IVRFProvider, VRFV2PlusWrapperConsumerBase, TeleporterOw
         unchecked {
             balance -= amount;
         }
-        s_linkToken.transfer(msg.sender, amount);
+        i_linkToken.transfer(msg.sender, amount);
         emit Withdraw(amount);
     }
 
