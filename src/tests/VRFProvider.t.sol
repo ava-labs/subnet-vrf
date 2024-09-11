@@ -64,7 +64,7 @@ contract VRFProviderTest is Test {
             ),
             abi.encode(MOCK_LATEST_TELEPORTER_VERSION)
         );
-                managers = new address[](1);
+        managers = new address[](1);
         managers[0] = address(this);
         proxies = new address[](1);
         proxies[0] = MOCK_VRF_PROXY_ADDRESS;
@@ -75,17 +75,11 @@ contract VRFProviderTest is Test {
         linkToken = new LinkToken();
 
         vm.mockCall(
-            MOCK_CHAINLINK_VRF_WRAPPER_ADDRESS,
-            abi.encodeWithSignature(
-                "link()"
-            ),
-            abi.encode(address(linkToken))
+            MOCK_CHAINLINK_VRF_WRAPPER_ADDRESS, abi.encodeWithSignature("link()"), abi.encode(address(linkToken))
         );
 
         provider = new VRFProvider(
-            MOCK_TELEPORTER_REGISTRY_ADDRESS,
-            address(vrfProxyRegistry),
-            MOCK_CHAINLINK_VRF_WRAPPER_ADDRESS
+            MOCK_TELEPORTER_REGISTRY_ADDRESS, address(vrfProxyRegistry), MOCK_CHAINLINK_VRF_WRAPPER_ADDRESS
         );
 
         linkToken.approve(address(provider), 10 ** 23);
