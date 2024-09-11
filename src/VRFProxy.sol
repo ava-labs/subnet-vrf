@@ -120,6 +120,8 @@ contract VRFProxy is IVRFProxy, TeleporterOwnerUpgradeable {
         // Note that _callWithExactGas will revert if we do not have sufficient gas
         // to give the callee their requested amount.
         bool success = GasUtils._callWithExactGas(response.callbackGasLimit, requester, resp);
-        emit RandomWordsFulfilled(requestID, success);
+        if (!success) revert ConsumerCallFailed();
+
+        emit RandomWordsFulfilled(requestID);
     }
 }
