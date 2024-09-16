@@ -8,6 +8,7 @@ REPO_BASE_PATH=$(
 )
 
 source $REPO_BASE_PATH/.env
+source $REPO_BASE_PATH/config
 source $REPO_BASE_PATH/deployment
 
 # Take a guess of a random number to test VRF functionality
