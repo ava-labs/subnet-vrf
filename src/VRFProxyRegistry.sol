@@ -49,7 +49,7 @@ contract VRFProxyRegistry is IVRFProxyRegistry, AccessControl {
             uint256 allowance = allowances[i];
             // Ensure proxy being approved for interaction with VRFProvider.
             if (!isApprovedProxy[blockchainID][proxy]) {
-                revert UnauthorizedProxy(proxy);
+                revert UnauthorizedProxy(blockchainID, proxy);
             }
             // Set new allowance value.
             _proxyAllowances[blockchainID][proxy] = allowance;
