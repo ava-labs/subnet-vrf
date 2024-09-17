@@ -117,9 +117,9 @@ contract VRFProxy is IVRFProxy, TeleporterOwnerUpgradeable {
             abi.encodeCall(VRFV2WrapperConsumerBase.rawFulfillRandomWords, (requestID, response.randomWords));
 
         // Call with explicitly the amount of callback gas requested.
-        // Note that _callWithExactGas will revert if we do not have sufficient gas
+        // Note that _callWithSufficientGas will revert if we do not have sufficient gas
         // to give the callee their requested amount.
-        bool success = GasUtils._callWithExactGas(response.callbackGasLimit, requester, resp);
+        bool success = GasUtils._callWithSufficientGas(response.callbackGasLimit, requester, resp);
         if (!success) revert ConsumerCallFailed();
 
         emit RandomWordsFulfilled(requestID);

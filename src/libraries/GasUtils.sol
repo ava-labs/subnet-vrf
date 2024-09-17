@@ -10,11 +10,11 @@ library GasUtils {
     uint256 public constant GAS_FOR_CALL_EXACT_CHECK = 5_000;
 
     /**
-     * Implementation taken from VRFCoordinatorV2.sol.
-     * @dev calls target address with exactly gasAmount gas and data as calldata
+     * Implementation taken from VRFCoordinatorV2.sol and modified (_callWithExactGas).
+     * @dev calls target address with total available gas >= gasAmount gas and data as calldata
      * or reverts if at least gasAmount gas is not available.
      */
-    function _callWithExactGas(uint256 gasAmount, address target, bytes memory data) internal returns (bool) {
+    function _callWithSufficientGas(uint256 gasAmount, address target, bytes memory data) internal returns (bool) {
         bool success;
         // solhint-disable-next-line
         assembly {
