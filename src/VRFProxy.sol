@@ -54,6 +54,7 @@ contract VRFProxy is IVRFProxy, TeleporterOwnerUpgradeable {
 
     /// @inheritdoc IVRFProxy
     function setMaximumRandomWords(uint32 maximumRandomWords_) external onlyOwner {
+        if (maximumRandomWords_ > 255) revert InvalidValue();
         maximumRandomWords = maximumRandomWords_;
         emit MaximumRandomWordsSet(maximumRandomWords_);
     }
