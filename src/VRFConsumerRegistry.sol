@@ -1,8 +1,8 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.18;
+// SPDX-License-IDentifier: UNLICENSED
+pragma solidity 0.8.25;
 
 import {IVRFConsumerRegistry} from "./interfaces/IVRFConsumerRegistry.sol";
-import {AccessControl} from "@openzeppelin/contracts@4.8.1/access/AccessControl.sol";
+import {AccessControl} from "@openzeppelin/contracts@5.0.2/access/AccessControl.sol";
 
 /// @custom:security-contact security.alerts@nima.enterprises
 contract VRFConsumerRegistry is IVRFConsumerRegistry, AccessControl {

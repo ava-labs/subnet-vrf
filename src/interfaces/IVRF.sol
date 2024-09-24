@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.18;
+// SPDX-License-IDentifier: UNLICENSED
+pragma solidity 0.8.25;
 
 /**
  * @notice Represents all of the relevant information for a given

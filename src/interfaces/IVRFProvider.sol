@@ -1,7 +1,7 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.18;
+// SPDX-License-IDentifier: UNLICENSED
+pragma solidity 0.8.25;
 
-import {ITeleporterReceiver} from "@teleporter/contracts/src/Teleporter/ITeleporterReceiver.sol";
+import {ITeleporterReceiver} from "@teleporter/ITeleporterReceiver.sol";
 import {IVRFProxyRegistry} from "./IVRFProxyRegistry.sol";
 
 interface IVRFProvider is ITeleporterReceiver {

@@ -1,17 +1,15 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.18;
+// SPDX-License-IDentifier: UNLICENSED
+pragma solidity 0.8.25;
 
 import {IVRFProvider} from "./interfaces/IVRFProvider.sol";
 import {VRFRequestInfo, VRFResponseInfo} from "./interfaces/IVRF.sol";
 import {IVRFProxyRegistry} from "./interfaces/IVRFProxyRegistry.sol";
 import {VRFV2WrapperConsumerBase} from "@chainlink/contracts/src/v0.8/vrf/VRFV2WrapperConsumerBase.sol";
-import {
-    TeleporterMessageInput, TeleporterFeeInfo
-} from "@teleporter/contracts/src/Teleporter/ITeleporterMessenger.sol";
-import {TeleporterOwnerUpgradeable} from "@teleporter/contracts/src/Teleporter/upgrades/TeleporterOwnerUpgradeable.sol";
+import {TeleporterMessageInput, TeleporterFeeInfo} from "@teleporter/ITeleporterMessenger.sol";
+import {TeleporterRegistryOwnableApp} from "@teleporter/registry/TeleporterRegistryOwnableApp.sol";
 
 /// @custom:security-contact security.alerts@nima.enterprises
-contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerUpgradeable {
+contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterRegistryOwnableApp {
     /// @inheritdoc IVRFProvider
     IVRFProxyRegistry public immutable vrfProxyRegistry;
     /// @inheritdoc IVRFProvider
@@ -38,7 +36,7 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
         address chainlinkVRFWrapper_,
         address link_
     )
-        TeleporterOwnerUpgradeable(teleporterRegistryAddress_, msg.sender)
+        TeleporterRegistryOwnableApp(teleporterRegistryAddress_, msg.sender, 1)
         VRFV2WrapperConsumerBase(link_, chainlinkVRFWrapper_)
     {
         if (vrfProxyRegistry_ == address(0)) revert VRFProxyRegistryAddressIsZero();
