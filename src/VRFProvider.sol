@@ -172,6 +172,7 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
         internal
         override
     {
+        // Check if origin sender is an approved proxy.
         if (!vrfProxyRegistry.isApprovedProxy(sourceBlockchainID, originSenderAddress)) {
             revert InvalidCallerOrSourceChainID();
         }
@@ -183,9 +184,10 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
         uint32 numWords = request.numWords;
         if (proxyRequestID == 0) revert InvalidProxyRequestID();
 
+        // Compute the request total price.
         uint32 total = TELEPORTER_CALLBACK_GAS_LIMIT_BASE + (TELEPORTER_CALLBACK_GAS_LIMIT_PER_WORD * numWords);
 
-        // Ensure that stakeholder has enough balance
+        // Ensure that stakeholder has enough balance.
         if (total > balance) revert InsufficientBalance();
         unchecked {
             balance -= total;
@@ -193,7 +195,7 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
 
         emit Payment(sourceBlockchainID, originSenderAddress, proxyRequestID, total);
 
-        // Pass the request on the Chainlink VRF coordinator
+        // Pass the request on the Chainlink VRF coordinator.
         uint256 chainlinkVRFRequestID = requestRandomness(total, request.minimumRequestConfirmations, numWords);
 
         // solhint-disable-next-line
@@ -201,6 +203,7 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterOwnerU
             sourceBlockchainID, originSenderAddress, proxyRequestID, chainlinkVRFRequestID, numWords, request.consumer
         );
 
+        // Store the request data.
         _requests[chainlinkVRFRequestID] = InternalRequestInfo({
             sourceBlockchainID: sourceBlockchainID,
             originSenderAddress: originSenderAddress,

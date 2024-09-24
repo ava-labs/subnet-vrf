@@ -65,6 +65,7 @@ contract VRFProxy is IVRFProxy, TeleporterOwnerUpgradeable {
         external
         returns (uint256)
     {
+        // Ensure that caller is an approved consumer.
         if (!vrfConsumerRegistry.isApprovedConsumer(msg.sender)) revert CallerIsNotAnApprovedConsumer();
         if (minimumRequestConfirmations < minimumConfirmations || minimumRequestConfirmations > MAXIMUM_CONFIRMATIONS) {
             revert MinimumRequestConfirmationsIsOutOfBounds();
@@ -130,7 +131,7 @@ contract VRFProxy is IVRFProxy, TeleporterOwnerUpgradeable {
         // gas opt
         uint256 requestID = response.requestID;
 
-        // Look up the requester.
+        // Ensure the validity of the requestID.
         address requester = requesters[requestID];
         if (requester == address(0)) revert InvalidRequestID();
 
