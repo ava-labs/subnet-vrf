@@ -1,4 +1,4 @@
-// SPDX-License-IDentifier: UNLICENSED
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.18;
 
 import {IAccessControl} from "@openzeppelin/contracts@4.8.1/access/IAccessControl.sol";
@@ -21,13 +21,13 @@ interface IVRFProxyRegistry is IAccessControl {
     error InvalidBlockchainID();
 
     /**
-     * @dev Function add proxies.
+     * @dev Function to add proxies.
      * @param blockchainID is an id of a blockchain to which proxies are deployed.
      * @param proxies is an array of proxy addresses to be authorized.
      */
     function addProxies(bytes32 blockchainID, address[] calldata proxies) external;
     /**
-     * @dev Function remove proxies.
+     * @dev Function to remove proxies.
      * @param blockchainID is an id of a blockchain to which proxies are deployed.
      * @param proxies is an array of proxy addresses to be removed from the set of authorized proxies.
      */

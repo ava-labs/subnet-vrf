@@ -1,4 +1,4 @@
-// SPDX-License-IDentifier: UNLICENSED
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.18;
 
 /**
@@ -11,6 +11,7 @@ struct VRFRequestInfo {
     uint16 minimumRequestConfirmations;
     uint32 callbackGasLimit;
     uint32 numWords;
+    address consumer;
 }
 
 /**
