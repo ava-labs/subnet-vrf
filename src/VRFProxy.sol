@@ -1,17 +1,16 @@
 // SPDX-License-IDentifier: UNLICENSED
-pragma solidity 0.8.18;
+pragma solidity 0.8.25;
 
 import {IVRFConsumerRegistry} from "./interfaces/IVRFConsumerRegistry.sol";
 import {IVRFProxy} from "./interfaces/IVRFProxy.sol";
 import {VRFRequestInfo, VRFResponseInfo} from "./interfaces/IVRF.sol";
 import {GasUtils} from "./libraries/GasUtils.sol";
-import {
-    TeleporterMessageInput, TeleporterFeeInfo
-} from "@teleporter/contracts/src/Teleporter/ITeleporterMessenger.sol";
-import {TeleporterOwnerUpgradeable} from "@teleporter/contracts/src/Teleporter/upgrades/TeleporterOwnerUpgradeable.sol";
+import {TeleporterMessageInput, TeleporterFeeInfo} from "@teleporter/ITeleporterMessenger.sol";
+import {TeleporterRegistryOwnableApp} from "@teleporter/registry/TeleporterRegistryOwnableApp.sol";
 import {VRFV2WrapperConsumerBase} from "@chainlink/contracts/src/v0.8/vrf/VRFV2WrapperConsumerBase.sol";
 
-contract VRFProxy is IVRFProxy, TeleporterOwnerUpgradeable {
+/// @custom:security-contact security.alerts@nima.enterprises
+contract VRFProxy is IVRFProxy, TeleporterRegistryOwnableApp {
     /// @inheritdoc IVRFProxy
     IVRFConsumerRegistry public immutable vrfConsumerRegistry;
     /// @inheritdoc IVRFProxy
@@ -23,6 +22,11 @@ contract VRFProxy is IVRFProxy, TeleporterOwnerUpgradeable {
     /// @inheritdoc IVRFProxy
     mapping(uint256 requestID => address requester) public requesters;
 
+    /// Chainlink Avalanche values
+    uint32 public maximumRandomWords = 10;
+    uint16 public minimumConfirmations = 0;
+    uint16 public constant MAXIMUM_CONFIRMATIONS = 200;
+
     /// @inheritdoc IVRFProxy
     uint256 public constant VRF_REQUEST_REQUIRED_GAS = 500_000;
 
@@ -31,7 +35,7 @@ contract VRFProxy is IVRFProxy, TeleporterOwnerUpgradeable {
         address vrfConsumerRegistry_,
         bytes32 vrfProviderBlockchainID_,
         address vrfProviderAddress_
-    ) TeleporterOwnerUpgradeable(teleporterRegistryAddress_, msg.sender) {
+    ) TeleporterRegistryOwnableApp(teleporterRegistryAddress_, msg.sender, 1) {
         if (vrfProviderAddress_ == address(0)) revert VRFProviderAddressIsZero();
         vrfProviderAddress = vrfProviderAddress_;
         if (vrfConsumerRegistry_ == address(0)) revert VRFConsumerRegistryAddressIsZero();
@@ -41,18 +45,38 @@ contract VRFProxy is IVRFProxy, TeleporterOwnerUpgradeable {
     }
 
     /// @inheritdoc IVRFProxy
+    function setMinimumConfirmations(uint16 minimumConfirmations_) external onlyOwner {
+        if (minimumConfirmations_ > MAXIMUM_CONFIRMATIONS) revert InvalidValue();
+        minimumConfirmations = minimumConfirmations_;
+        emit MinimumConfirmationsSet(minimumConfirmations_);
+    }
+
+    /// @inheritdoc IVRFProxy
+    function setMaximumRandomWords(uint32 maximumRandomWords_) external onlyOwner {
+        if (maximumRandomWords_ > type(uint8).max) revert InvalidValue();
+        maximumRandomWords = maximumRandomWords_;
+        emit MaximumRandomWordsSet(maximumRandomWords_);
+    }
+
+    /// @inheritdoc IVRFProxy
     function requestRandomWords(uint16 minimumRequestConfirmations, uint32 callbackGasLimit, uint32 numWords)
         external
         returns (uint256)
     {
+        // Ensure that caller is an approved consumer.
         if (!vrfConsumerRegistry.isApprovedConsumer(msg.sender)) revert CallerIsNotAnApprovedConsumer();
+        if (minimumRequestConfirmations < minimumConfirmations || minimumRequestConfirmations > MAXIMUM_CONFIRMATIONS) {
+            revert MinimumRequestConfirmationsIsOutOfBounds();
+        }
+        if (numWords > maximumRandomWords) revert NumberOfRequestedWordsIsOverTheLimit();
         // Assign the next nonce to be used at the request ID.
         uint256 nonce = ++requestNonce;
         VRFRequestInfo memory requestInfo = VRFRequestInfo({
             requestID: nonce,
             minimumRequestConfirmations: minimumRequestConfirmations,
             callbackGasLimit: callbackGasLimit,
-            numWords: numWords
+            numWords: numWords,
+            consumer: msg.sender
         });
 
         // Store the address requesting the random value to be called
@@ -68,7 +92,7 @@ contract VRFProxy is IVRFProxy, TeleporterOwnerUpgradeable {
                 feeInfo: TeleporterFeeInfo({feeTokenAddress: address(0), amount: 0}),
                 requiredGasLimit: VRF_REQUEST_REQUIRED_GAS,
                 allowedRelayerAddresses: new address[](0),
-                message: abi.encode(requestInfo, msg.sender)
+                message: abi.encode(requestInfo)
             })
         );
 
@@ -105,7 +129,7 @@ contract VRFProxy is IVRFProxy, TeleporterOwnerUpgradeable {
         // gas opt
         uint256 requestID = response.requestID;
 
-        // Look up the requester.
+        // Ensure the validity of the requestID.
         address requester = requesters[requestID];
         if (requester == address(0)) revert InvalidRequestID();
 
