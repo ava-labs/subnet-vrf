@@ -126,7 +126,7 @@ contract VRFProxyTest is Test {
     function testRemoveConsumerNotManager() public {
         vm.expectRevert(
             abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, NON_OWNER_ADDRESS, DEFAULT_ADMIN_ROLE
+                IAccessControl.AccessControlUnauthorizedAccount.selector, NON_OWNER_ADDRESS, CONSUMER_MANAGER
             )
         );
         // NON_OWNER_ADDRESS does not have the DEFAULT_ADMIN_ROLE
