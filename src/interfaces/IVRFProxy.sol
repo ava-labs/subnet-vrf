@@ -1,12 +1,18 @@
 // SPDX-License-IDentifier: UNLICENSED
-pragma solidity 0.8.18;
+pragma solidity 0.8.25;
 
-import {ITeleporterReceiver} from "@teleporter/contracts/src/Teleporter/ITeleporterReceiver.sol";
+import {ITeleporterReceiver} from "@teleporter/ITeleporterReceiver.sol";
 import {IVRFConsumerRegistry} from "./IVRFConsumerRegistry.sol";
 
 interface IVRFProxy is ITeleporterReceiver {
     /**
      * @dev Emmited when a request for random words is made.
+     * @param requestID is a local request id.
+     * @param requester is an address/consumer which made the request.
+     * @param minimumRequestConfirmations - How many blocks you'd like the VRF service on the partner chain to wait prior
+     * to fulfilling the request once the VRF provider submits the request on the partner chain.
+     * @param callbackGasLimit - How much gas needs to be provided to the fulfillRandomWords call to complete this randomness request.
+     * @param numWords - The number of uint256 values requested.
      */
     event RandomWordsRequested(
         uint256 indexed requestID,
@@ -20,10 +26,22 @@ interface IVRFProxy is ITeleporterReceiver {
      * @dev Emitted when a request for random words is fulfilled.
      * @param requestID - A unique ID for the request. This is assigned by the VRFProxy, and separate from the request
      * ID assigned by the Chainlink VRF Coordinator on the partner chain.
-     * @param success - Whether or not the call to the requester's fulfillRandomWords fundction succeeded. The requesters
+     * @param success - Whether or not the call to the requester's fulfillRandomWords function succeeded. The requesters
      * are responsible for the correctness of their own implementation. Success cannot be ensured by the VRFProxy.
      */
     event RandomWordsFulfilled(uint256 indexed requestID, bool success);
+
+    /**
+     * @dev Emitted when minimumConfirmations value has been set.
+     * @param minimumConfirmations is a newly set value.
+     */
+    event MinimumConfirmationsSet(uint16 minimumConfirmations);
+
+    /**
+     * @dev Emitted when maximumRandomWords value has been set.
+     * @param maximumRandomWords is a newly set value.
+     */
+    event MaximumRandomWordsSet(uint32 maximumRandomWords);
 
     /**
      * Errors
@@ -35,12 +53,28 @@ interface IVRFProxy is ITeleporterReceiver {
     error InvalidSourceBlockchainID();
     error CallerNotVRFProvider();
     error InvalidRequestID();
+    error MinimumRequestConfirmationsIsOutOfBounds();
+    error NumberOfRequestedWordsIsOverTheLimit();
+    error InvalidValue();
+
+    /**
+     * @dev Function to set new minimumConfirmations value.
+     * @param minimumConfirmations_ reflects Chainlink's minimumConfirmations setting for a chain to which VRFProvider is deployed (Avalanche C-Chain).
+     * It is modifiable inside the Chainlink config, so it should the same way on our end too.
+     */
+    function setMinimumConfirmations(uint16 minimumConfirmations_) external;
+
+    /**
+     * @dev Function to set new maximumRandomWords value.
+     * @param maximumRandomWords_ limits the amount of random words to be requested at once.
+     */
+    function setMaximumRandomWords(uint32 maximumRandomWords_) external;
 
     /**
      * @notice Request a set of random words.
      * The request is passed on to the partner chain where the VRFProvider is deployed via Teleporter message.
      * See https://github.com/smartcontractkit/chainlink/blob/develop/contracts/src/v0.8/vrf/interfaces/VRFCoordinatorV2Interface.sol#L13
-     * for further documentation of how each value is used within Chainlink VRF reuests.
+     * for further documentation of how each value is used within Chainlink VRF requests.
      * @param minimumRequestConfirmations - How many blocks you'd like the VRF service on the partner chain to wait prior
      * to fulfilling the request once the VRF provider submits the request on the partner chain.
      * @param callbackGasLimit - How much gas needs to be provided to the fulfillRandomWords call to complete this randomness request.
@@ -63,7 +97,7 @@ interface IVRFProxy is ITeleporterReceiver {
     function vrfProviderBlockchainID() external view returns (bytes32);
 
     /**
-     * @dev The contract adddress of the VRFProvider to be used on the partner blockchain.
+     * @dev The contract address of the VRFProvider to be used on the partner blockchain.
      */
     function vrfProviderAddress() external view returns (address);
 
@@ -74,6 +108,7 @@ interface IVRFProxy is ITeleporterReceiver {
 
     /**
      * @dev The address that request the random values for each request ID.
+     * @param requestID is the local request id per network per proxy.
      */
     function requesters(uint256 requestID) external view returns (address);
 

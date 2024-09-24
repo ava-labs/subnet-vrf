@@ -1,18 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.18;
+pragma solidity 0.8.25;
 
 import {Test} from "forge-std/Test.sol";
 import {IVRFProvider, VRFProvider} from "../VRFProvider.sol";
 import {VRFProxyRegistry} from "../VRFProxyRegistry.sol";
 import {LinkToken} from "../mocks/LinkToken.sol";
+import {Ownable} from "@openzeppelin/contracts@5.0.2/access/Ownable.sol";
 import {VRFRequestInfo, VRFResponseInfo} from "../interfaces/IVRF.sol";
 import {VRFV2WrapperInterface} from "@chainlink/contracts/src/v0.8/vrf/interfaces/VRFV2WrapperInterface.sol";
-import {TeleporterRegistry} from "@teleporter/contracts/src/Teleporter/upgrades/TeleporterRegistry.sol";
-import {
-    ITeleporterMessenger,
-    TeleporterMessageInput,
-    TeleporterFeeInfo
-} from "@teleporter/contracts/src/Teleporter/ITeleporterMessenger.sol";
+import {TeleporterRegistry} from "@teleporter/registry/TeleporterRegistry.sol";
+import {ITeleporterMessenger, TeleporterMessageInput, TeleporterFeeInfo} from "@teleporter/ITeleporterMessenger.sol";
 
 contract VRFProviderTest is Test {
     address public constant MOCK_TELEPOTER_MESSENGER_ADDRESS = address(0x1111);
@@ -43,10 +40,12 @@ contract VRFProviderTest is Test {
         address indexed consumer
     );
     event VRFRequestFulfilled(uint256 indexed proxyRequestID, uint256 indexed chainlinkVRFRequestID, uint32 numWords);
-    event Payment(address indexed proxyAddress, uint256 indexed proxyRequestID, uint256 total);
     event Withdraw(uint256 amount);
     event FunderAdded(address indexed funder);
     event FunderRemoved(address indexed funder);
+    event Payment(
+        bytes32 indexed sourceBlockchainId, address indexed proxyAddress, uint256 indexed proxyRequestID, uint256 total
+    );
 
     function setUp() public virtual {
         vm.mockCall(
@@ -200,7 +199,7 @@ contract VRFProviderTest is Test {
     }
 
     function testWithdrawToFailDueToUnauthorizedCaller() public {
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(0x5555)));
         vm.prank(address(0x5555));
         provider.withdraw(10 ** 18);
     }
@@ -236,7 +235,7 @@ contract VRFProviderTest is Test {
         );
         vm.prank(MOCK_TELEPOTER_MESSENGER_ADDRESS);
         vm.expectEmit(true, true, true, true, address(provider));
-        emit Payment(MOCK_VRF_PROXY_ADDRESS, request.requestID, total);
+        emit Payment(MOCK_VRF_PROXY_BLOCKCHAIN_ID, MOCK_VRF_PROXY_ADDRESS, request.requestID, total);
         vm.expectEmit(true, true, true, true, address(provider));
         // solhint-disable-next-line
         emit VRFRequestReceived(
@@ -252,8 +251,13 @@ contract VRFProviderTest is Test {
         );
     }
 
-    function _getMockVRFRequestInfo() internal pure returns (VRFRequestInfo memory) {
-        return
-            VRFRequestInfo({requestID: 543, minimumRequestConfirmations: 200, callbackGasLimit: 200_000, numWords: 1});
+    function _getMockVRFRequestInfo() internal view returns (VRFRequestInfo memory) {
+        return VRFRequestInfo({
+            requestID: 543,
+            minimumRequestConfirmations: 200,
+            callbackGasLimit: 200_000,
+            numWords: 1,
+            consumer: address(this)
+        });
     }
 }

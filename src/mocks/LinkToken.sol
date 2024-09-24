@@ -1,6 +1,7 @@
-pragma solidity 0.8.18;
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity 0.8.25;
 
-import {ERC20} from "@openzeppelin/contracts@4.8.1/token/ERC20/ERC20.sol";
+import {ERC20} from "@openzeppelin/contracts@5.0.2/token/ERC20/ERC20.sol";
 
 interface ERC677Receiver {
     function onTokenTransfer(address sender, uint256 value, bytes calldata data) external;
