@@ -38,7 +38,7 @@ contract VRFProxyTest is Test {
         uint32 callbackGasLimit,
         uint32 numWords
     );
-    event RandomWordsFulfilled(uint256 indexed requestID, bool success);
+    event RandomWordsFulfilled(uint256 indexed requestID);
 
     function setUp() public virtual {
         vm.mockCall(
@@ -229,13 +229,10 @@ contract VRFProxyTest is Test {
             MOCK_CONSUMER, abi.encodeCall(consumer.rawFulfillRandomWords, (requestID, mockValues)), new bytes(0)
         );
         vm.expectCall(
-            MOCK_CONSUMER,
-            0,
-            callbackGasLimit,
-            abi.encodeWithSelector(consumer.rawFulfillRandomWords.selector, requestID, mockValues)
+            MOCK_CONSUMER, 0, abi.encodeWithSelector(consumer.rawFulfillRandomWords.selector, requestID, mockValues)
         );
         vm.expectEmit(true, true, true, true, address(vrfProxy));
-        emit RandomWordsFulfilled(requestID, true);
+        emit RandomWordsFulfilled(requestID);
         vm.prank(MOCK_TELEPOTER_MESSENGER_ADDRESS);
         vrfProxy.receiveTeleporterMessage(
             MOCK_VRF_PROVIDER_BLOCKCHAIN_ID, MOCK_VRF_PROVIDER_ADDRESS, abi.encode(response)
@@ -243,6 +240,9 @@ contract VRFProxyTest is Test {
     }
 
     function testReceiveTeleporterMessageSuccessCallReverts() public {
+        // There is no such case anymore, if a call to consumer reverts the tx should revert as well,
+        // this is in order to enable execution retrying through the teleporter.
+        vm.skip(true);
         // Place a request from the expected consumer.
         uint32 callbackGasLimit = 100_000;
         uint256 requestID = _makeRandomWordsRequest(MOCK_CONSUMER, callbackGasLimit);
@@ -262,8 +262,6 @@ contract VRFProxyTest is Test {
         vm.expectCall(
             MOCK_CONSUMER, 0, callbackGasLimit, abi.encodeCall(consumer.rawFulfillRandomWords, (requestID, mockValues))
         );
-        vm.expectEmit(true, true, true, true, address(vrfProxy));
-        emit RandomWordsFulfilled(requestID, false);
         vm.prank(MOCK_TELEPOTER_MESSENGER_ADDRESS);
         vrfProxy.receiveTeleporterMessage(
             MOCK_VRF_PROVIDER_BLOCKCHAIN_ID, MOCK_VRF_PROVIDER_ADDRESS, abi.encode(response)

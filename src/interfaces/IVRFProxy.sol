@@ -26,10 +26,8 @@ interface IVRFProxy is ITeleporterReceiver {
      * @dev Emitted when a request for random words is fulfilled.
      * @param requestID - A unique ID for the request. This is assigned by the VRFProxy, and separate from the request
      * ID assigned by the Chainlink VRF Coordinator on the partner chain.
-     * @param success - Whether or not the call to the requester's fulfillRandomWords function succeeded. The requesters
-     * are responsible for the correctness of their own implementation. Success cannot be ensured by the VRFProxy.
      */
-    event RandomWordsFulfilled(uint256 indexed requestID, bool success);
+    event RandomWordsFulfilled(uint256 indexed requestID);
 
     /**
      * @dev Emitted when minimumConfirmations value has been set.
@@ -53,6 +51,7 @@ interface IVRFProxy is ITeleporterReceiver {
     error InvalidSourceBlockchainID();
     error CallerNotVRFProvider();
     error InvalidRequestID();
+    error ConsumerCallFailed();
     error MinimumRequestConfirmationsIsOutOfBounds();
     error NumberOfRequestedWordsIsOverTheLimit();
     error InvalidValue();
