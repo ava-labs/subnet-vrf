@@ -1,4 +1,4 @@
-// SPDX-License-IDentifier: UNLICENSED
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.18;
 
 import {ITeleporterReceiver} from "@teleporter/contracts/src/Teleporter/ITeleporterReceiver.sol";
@@ -14,8 +14,8 @@ interface IVRFProvider is ITeleporterReceiver {
     struct InternalRequestInfo {
         bytes32 sourceBlockchainID;
         address originSenderAddress;
-        uint256 proxyRequestID;
         uint32 messageCallbackGasLimit;
+        uint256 proxyRequestID;
     }
 
     /**
@@ -31,7 +31,7 @@ interface IVRFProvider is ITeleporterReceiver {
     /**
      * @dev Emitted when $LINK is deposited to the contract.
      */
-    event Deposit(uint256 amount);
+    event Deposit(address indexed authorizedFunder, uint256 amount);
 
     /**
      * @dev Emitted when $LINK is withdrawn from the contract.
@@ -41,7 +41,9 @@ interface IVRFProvider is ITeleporterReceiver {
     /**
      * @dev Emitted when $LINK payment has been made with purpose of a VRF request creation.
      */
-    event Payment(address indexed proxyAddress, uint256 indexed proxyRequestID, uint256 total);
+    event Payment(
+        bytes32 indexed sourceBlockchainID, address indexed proxyAddress, uint256 indexed proxyRequestID, uint256 total
+    );
 
     /**
      * @dev Emitted when a message is received from the partner VRFProxy requesting random values.
@@ -72,6 +74,13 @@ interface IVRFProvider is ITeleporterReceiver {
     event VRFRequestFulfilled(uint256 indexed proxyRequestID, uint256 indexed chainlinkVRFRequestID, uint32 numWords);
 
     /**
+     * @dev Emitted once a request for random words is cached - this happens when the Teleporter is paused.
+     * @dev Cached responses can be bridged only manually.
+     * @param chainlinkVRFRequestID is an id of a request for which the received response was cached but not bridged.
+     */
+    event ResponseCached(uint256 indexed chainlinkVRFRequestID);
+
+    /**
      * Errors
      */
     error NotAnAuthorizedFunder();
@@ -80,6 +89,7 @@ interface IVRFProvider is ITeleporterReceiver {
     error InvalidProxyRequestID();
     error InvalidChainlinkVRFRequestID();
     error VRFProxyRegistryAddressIsZero();
+    error RequestNotCached();
 
     /**
      * @dev Function to add authorized funders
