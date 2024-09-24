@@ -5,6 +5,7 @@ import {Test} from "forge-std/Test.sol";
 import {IVRFProvider, VRFProvider} from "../VRFProvider.sol";
 import {VRFProxyRegistry} from "../VRFProxyRegistry.sol";
 import {LinkToken} from "../mocks/LinkToken.sol";
+import {Ownable} from "@openzeppelin/contracts@5.0.2/access/Ownable.sol";
 import {VRFRequestInfo, VRFResponseInfo} from "../interfaces/IVRF.sol";
 import {VRFV2WrapperInterface} from "@chainlink/contracts/src/v0.8/vrf/interfaces/VRFV2WrapperInterface.sol";
 import {TeleporterRegistry} from "@teleporter/registry/TeleporterRegistry.sol";
@@ -39,6 +40,9 @@ contract VRFProviderTest is Test {
         address indexed consumer
     );
     event VRFRequestFulfilled(uint256 indexed proxyRequestID, uint256 indexed chainlinkVRFRequestID, uint32 numWords);
+    event Withdraw(uint256 amount);
+    event FunderAdded(address indexed funder);
+    event FunderRemoved(address indexed funder);
     event Payment(
         bytes32 indexed sourceBlockchainId, address indexed proxyAddress, uint256 indexed proxyRequestID, uint256 total
     );
@@ -81,6 +85,22 @@ contract VRFProviderTest is Test {
 
         linkToken.approve(address(provider), 10 ** 23);
         provider.deposit(10 ** 23);
+    }
+
+    function testSetUpToFailDueToZeroVRFProxyRegistryAddress() public {
+        vm.expectRevert(IVRFProvider.VRFProxyRegistryAddressIsZero.selector);
+        new VRFProvider(
+            MOCK_TELEPORTER_REGISTRY_ADDRESS, address(0), MOCK_CHAINLINK_VRF_WRAPPER_ADDRESS, address(linkToken)
+        );
+    }
+
+    function testDepositToFailDueToNoAuthorizedFunder() public {
+        address nonFunder = vm.addr(0x5555);
+        linkToken.approve(address(this), 10 ** 18);
+        linkToken.transferFrom(address(this), nonFunder, 10 ** 18);
+        vm.prank(nonFunder);
+        vm.expectRevert(IVRFProvider.NotAnAuthorizedFunder.selector);
+        provider.deposit(10 ** 18);
     }
 
     function testReceiveTeleporterMessageSuccess() public {
@@ -165,6 +185,40 @@ contract VRFProviderTest is Test {
         vm.expectRevert(IVRFProvider.InvalidChainlinkVRFRequestID.selector);
         vm.prank(MOCK_CHAINLINK_VRF_WRAPPER_ADDRESS);
         provider.rawFulfillRandomWords(123, mockRandomWords);
+    }
+
+    function testWithdrawSuccess() public {
+        vm.expectEmit(true, true, true, true, address(provider));
+        emit Withdraw(10 ** 18);
+        provider.withdraw(10 ** 18);
+    }
+
+    function testWithdrawToFailDueToInsufficientBalance() public {
+        vm.expectRevert(IVRFProvider.InsufficientBalance.selector);
+        provider.withdraw(10 ** 24);
+    }
+
+    function testWithdrawToFailDueToUnauthorizedCaller() public {
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(0x5555)));
+        vm.prank(address(0x5555));
+        provider.withdraw(10 ** 18);
+    }
+
+    function testAddFundersSuccess() public {
+        address[] memory funders = new address[](1);
+        funders[0] = address(0x5555);
+        vm.expectEmit(true, true, true, true, address(provider));
+        emit FunderAdded(address(0x5555));
+        provider.addFunders(funders);
+    }
+
+    function testRemoveFundersSuccess() public {
+        address[] memory funders = new address[](1);
+        funders[0] = address(0x5555);
+        provider.addFunders(funders);
+        vm.expectEmit(true, true, true, true, address(provider));
+        emit FunderRemoved(address(0x5555));
+        provider.removeFunders(funders);
     }
 
     function _submitVRFRequest(VRFRequestInfo memory request, uint256 mockChainlinkVRFRequestID) internal {
