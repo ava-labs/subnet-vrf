@@ -1,23 +1,26 @@
 // SPDX-License-IDentifier: UNLICENSED
-pragma solidity 0.8.18;
+pragma solidity 0.8.25;
 
 import {IVRFProvider} from "./interfaces/IVRFProvider.sol";
 import {VRFRequestInfo, VRFResponseInfo} from "./interfaces/IVRF.sol";
 import {IVRFProxyRegistry} from "./interfaces/IVRFProxyRegistry.sol";
 import {VRFV2PlusWrapperConsumerBase} from "@chainlink/contracts/src/v0.8/vrf/dev/VRFV2PlusWrapperConsumerBase.sol";
 import {VRFV2PlusClient} from "@chainlink/contracts/src/v0.8/vrf/dev/libraries/VRFV2PlusClient.sol";
-import {
-    TeleporterMessageInput, TeleporterFeeInfo
-} from "@teleporter/contracts/src/Teleporter/ITeleporterMessenger.sol";
-import {TeleporterOwnerUpgradeable} from "@teleporter/contracts/src/Teleporter/upgrades/TeleporterOwnerUpgradeable.sol";
+import {TeleporterMessageInput, TeleporterFeeInfo} from "@teleporter/ITeleporterMessenger.sol";
+import {TeleporterRegistryOwnableApp} from "@teleporter/registry/TeleporterRegistryOwnableApp.sol";
 
-contract VRFProvider is IVRFProvider, VRFV2PlusWrapperConsumerBase, TeleporterOwnerUpgradeable {
+/// @custom:security-contact security.alerts@nima.enterprises
+contract VRFProvider is IVRFProvider, VRFV2PlusWrapperConsumerBase, TeleporterRegistryOwnableApp {
+    /// @inheritdoc IVRFProvider
+    IVRFProxyRegistry public immutable vrfProxyRegistry;
     /// @inheritdoc IVRFProvider
     uint256 public balance;
     /// @inheritdoc IVRFProvider
-    IVRFProxyRegistry public vrfProxyRegistry;
-    /// @inheritdoc IVRFProvider
     mapping(address account => bool isAllowedToDeposit) public authorizedFunders;
+    /**
+     * @dev Tracks response information, manual response bridging support.
+     */
+    mapping(uint256 chainlinkVRFRequestID => VRFResponseInfo response) public cachedResponses;
     /**
      * @dev Tracks the request information by the Chainlink VRF request ID.
      */
@@ -28,8 +31,12 @@ contract VRFProvider is IVRFProvider, VRFV2PlusWrapperConsumerBase, TeleporterOw
     uint32 public constant TELEPORTER_CALLBACK_GAS_LIMIT_PER_WORD = 5_000;
     uint32 public constant TELEPORTER_RECEIVE_MESSAGE_GAS_OVERHEAD = 300_000;
 
-    constructor(address teleporterRegistryAddress_, address vrfProxyRegistry_, address vrfV2PlusWrapper_)
-        TeleporterOwnerUpgradeable(teleporterRegistryAddress_, msg.sender)
+    constructor(
+        address teleporterRegistryAddress_,
+        address vrfProxyRegistry_,
+        address vrfV2PlusWrapper_
+    )
+        TeleporterRegistryOwnableApp(teleporterRegistryAddress_, msg.sender, 1)
         VRFV2PlusWrapperConsumerBase(vrfV2PlusWrapper_)
     {
         if (vrfProxyRegistry_ == address(0)) revert VRFProxyRegistryAddressIsZero();
@@ -39,7 +46,7 @@ contract VRFProvider is IVRFProvider, VRFV2PlusWrapperConsumerBase, TeleporterOw
     /// @inheritdoc IVRFProvider
     function addFunders(address[] calldata funders) external onlyOwner {
         uint256 length = funders.length;
-        for (uint256 i; i < length; i++) {
+        for (uint256 i; i < length; ++i) {
             address funder = funders[i];
             if (!authorizedFunders[funder] && funder != address(0)) {
                 authorizedFunders[funder] = true;
@@ -51,7 +58,7 @@ contract VRFProvider is IVRFProvider, VRFV2PlusWrapperConsumerBase, TeleporterOw
     /// @inheritdoc IVRFProvider
     function removeFunders(address[] calldata funders) external onlyOwner {
         uint256 length = funders.length;
-        for (uint256 i; i < length; i++) {
+        for (uint256 i; i < length; ++i) {
             address funder = funders[i];
             if (authorizedFunders[funder] && funder != address(0)) {
                 delete authorizedFunders[funder];
@@ -63,21 +70,46 @@ contract VRFProvider is IVRFProvider, VRFV2PlusWrapperConsumerBase, TeleporterOw
     /// @inheritdoc IVRFProvider
     function deposit(uint256 amount) external {
         if (!authorizedFunders[msg.sender] && msg.sender != owner()) revert NotAnAuthorizedFunder();
-        i_linkToken.transferFrom(msg.sender, address(this), amount);
         unchecked {
             balance += amount;
         }
-        emit Deposit(amount);
+        i_linkToken.transferFrom(msg.sender, address(this), amount);
+        emit Deposit(msg.sender, amount);
     }
 
     /// @inheritdoc IVRFProvider
     function withdraw(uint256 amount) external onlyOwner {
-        if (balance >= amount) revert InsufficientBalance();
+        if (balance < amount) revert InsufficientBalance();
         unchecked {
             balance -= amount;
         }
         i_linkToken.transfer(msg.sender, amount);
         emit Withdraw(amount);
+    }
+
+    /**
+     * @dev Function to manually bridge a response that took place when teleporter was paused.
+     * @param chainlinkVRFRequestID is an ID of a chainlink VRF request.
+     */
+    function bridgeResponse(uint256 chainlinkVRFRequestID) external {
+        // Check if the reponse for the requested vrf request is cached
+        VRFResponseInfo memory response = cachedResponses[chainlinkVRFRequestID];
+        if (response.requestID == 0) revert RequestNotCached();
+
+        InternalRequestInfo memory requestInfo = _requests[chainlinkVRFRequestID];
+
+        _getTeleporterMessenger().sendCrossChainMessage(
+            TeleporterMessageInput({
+                destinationBlockchainID: requestInfo.sourceBlockchainID,
+                destinationAddress: requestInfo.originSenderAddress,
+                feeInfo: TeleporterFeeInfo({feeTokenAddress: address(0), amount: 0}),
+                requiredGasLimit: requestInfo.messageCallbackGasLimit + TELEPORTER_RECEIVE_MESSAGE_GAS_OVERHEAD,
+                allowedRelayerAddresses: new address[](0),
+                message: abi.encode(response)
+            })
+        );
+
+        delete cachedResponses[chainlinkVRFRequestID];
     }
 
     /**
@@ -105,16 +137,24 @@ contract VRFProvider is IVRFProvider, VRFV2PlusWrapperConsumerBase, TeleporterOw
             callbackGasLimit: requestInfo.messageCallbackGasLimit
         });
 
-        _getTeleporterMessenger().sendCrossChainMessage(
-            TeleporterMessageInput({
-                destinationBlockchainID: requestInfo.sourceBlockchainID,
-                destinationAddress: requestInfo.originSenderAddress,
-                feeInfo: TeleporterFeeInfo({feeTokenAddress: address(0), amount: 0}),
-                requiredGasLimit: requestInfo.messageCallbackGasLimit + TELEPORTER_RECEIVE_MESSAGE_GAS_OVERHEAD,
-                allowedRelayerAddresses: new address[](0),
-                message: abi.encode(response)
-            })
-        );
+        // Check teleported status (if it is paused or not) before executing the cross chain message
+        // If teleporter is paused, the response can be manually bridged.
+        if (isTeleporterAddressPaused(address(_getTeleporterMessenger()))) {
+            // Store the response
+            cachedResponses[chainlinkVRFRequestID] = response;
+            emit ResponseCached(chainlinkVRFRequestID);
+        } else {
+            _getTeleporterMessenger().sendCrossChainMessage(
+                TeleporterMessageInput({
+                    destinationBlockchainID: requestInfo.sourceBlockchainID,
+                    destinationAddress: requestInfo.originSenderAddress,
+                    feeInfo: TeleporterFeeInfo({feeTokenAddress: address(0), amount: 0}),
+                    requiredGasLimit: requestInfo.messageCallbackGasLimit + TELEPORTER_RECEIVE_MESSAGE_GAS_OVERHEAD,
+                    allowedRelayerAddresses: new address[](0),
+                    message: abi.encode(response)
+                })
+            );
+        }
     }
 
     /**
@@ -130,26 +170,28 @@ contract VRFProvider is IVRFProvider, VRFV2PlusWrapperConsumerBase, TeleporterOw
         internal
         override
     {
+        // Check if origin sender is an approved proxy.
         if (!vrfProxyRegistry.isApprovedProxy(sourceBlockchainID, originSenderAddress)) {
             revert InvalidCallerOrSourceChainID();
         }
 
         // Decode the request.
-        (VRFRequestInfo memory request, address consumer) = abi.decode(message, (VRFRequestInfo, address));
+        (VRFRequestInfo memory request) = abi.decode(message, (VRFRequestInfo));
         // gas opt
         uint256 proxyRequestID = request.requestID;
         uint32 numWords = request.numWords;
         if (proxyRequestID == 0) revert InvalidProxyRequestID();
 
+        // Compute the request total price.
         uint32 total = TELEPORTER_CALLBACK_GAS_LIMIT_BASE + (TELEPORTER_CALLBACK_GAS_LIMIT_PER_WORD * numWords);
 
-        // Ensure that stakeholder has enough balance
+        // Ensure that stakeholder has enough balance.
         if (total > balance) revert InsufficientBalance();
         unchecked {
             balance -= total;
         }
 
-        emit Payment(originSenderAddress, proxyRequestID, total);
+        emit Payment(sourceBlockchainID, originSenderAddress, proxyRequestID, total);
 
         // Pass the request on the Chainlink VRF coordinator
         (uint256 chainlinkVRFRequestID,) = requestRandomness(
@@ -161,14 +203,15 @@ contract VRFProvider is IVRFProvider, VRFV2PlusWrapperConsumerBase, TeleporterOw
 
         // solhint-disable-next-line
         emit VRFRequestReceived(
-            sourceBlockchainID, originSenderAddress, proxyRequestID, chainlinkVRFRequestID, numWords, consumer
+            sourceBlockchainID, originSenderAddress, proxyRequestID, chainlinkVRFRequestID, numWords, request.consumer
         );
 
+        // Store the request data.
         _requests[chainlinkVRFRequestID] = InternalRequestInfo({
             sourceBlockchainID: sourceBlockchainID,
             originSenderAddress: originSenderAddress,
-            proxyRequestID: proxyRequestID,
-            messageCallbackGasLimit: request.callbackGasLimit
+            messageCallbackGasLimit: request.callbackGasLimit,
+            proxyRequestID: proxyRequestID
         });
     }
 }
