@@ -7,7 +7,7 @@ import {VRFRequestInfo, VRFResponseInfo} from "./interfaces/IVRF.sol";
 import {GasUtils} from "./libraries/GasUtils.sol";
 import {TeleporterMessageInput, TeleporterFeeInfo} from "@teleporter/ITeleporterMessenger.sol";
 import {TeleporterRegistryOwnableApp} from "@teleporter/registry/TeleporterRegistryOwnableApp.sol";
-import {VRFV2WrapperConsumerBase} from "@chainlink/contracts/src/v0.8/vrf/VRFV2WrapperConsumerBase.sol";
+import {VRFV2PlusWrapperConsumerBase} from "@chainlink/contracts/src/v0.8/vrf/dev/VRFV2PlusWrapperConsumerBase.sol";
 
 /// @custom:security-contact security.alerts@nima.enterprises
 contract VRFProxy is IVRFProxy, TeleporterRegistryOwnableApp {
@@ -138,7 +138,7 @@ contract VRFProxy is IVRFProxy, TeleporterRegistryOwnableApp {
 
         // Pass the result to the destination with the exact gas limit.
         bytes memory resp =
-            abi.encodeCall(VRFV2WrapperConsumerBase.rawFulfillRandomWords, (requestID, response.randomWords));
+            abi.encodeCall(VRFV2PlusWrapperConsumerBase.rawFulfillRandomWords, (requestID, response.randomWords));
 
         // Call with explicitly the amount of callback gas requested.
         // Note that _callWithSufficientGas will revert if we do not have sufficient gas

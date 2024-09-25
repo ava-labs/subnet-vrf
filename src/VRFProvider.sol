@@ -4,12 +4,13 @@ pragma solidity 0.8.25;
 import {IVRFProvider} from "./interfaces/IVRFProvider.sol";
 import {VRFRequestInfo, VRFResponseInfo} from "./interfaces/IVRF.sol";
 import {IVRFProxyRegistry} from "./interfaces/IVRFProxyRegistry.sol";
-import {VRFV2WrapperConsumerBase} from "@chainlink/contracts/src/v0.8/vrf/VRFV2WrapperConsumerBase.sol";
+import {VRFV2PlusWrapperConsumerBase} from "@chainlink/contracts/src/v0.8/vrf/dev/VRFV2PlusWrapperConsumerBase.sol";
+import {VRFV2PlusClient} from "@chainlink/contracts/src/v0.8/vrf/dev/libraries/VRFV2PlusClient.sol";
 import {TeleporterMessageInput, TeleporterFeeInfo} from "@teleporter/ITeleporterMessenger.sol";
 import {TeleporterRegistryOwnableApp} from "@teleporter/registry/TeleporterRegistryOwnableApp.sol";
 
 /// @custom:security-contact security.alerts@nima.enterprises
-contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterRegistryOwnableApp {
+contract VRFProvider is IVRFProvider, VRFV2PlusWrapperConsumerBase, TeleporterRegistryOwnableApp {
     /// @inheritdoc IVRFProvider
     IVRFProxyRegistry public immutable vrfProxyRegistry;
     /// @inheritdoc IVRFProvider
@@ -30,14 +31,9 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterRegist
     uint32 public constant TELEPORTER_CALLBACK_GAS_LIMIT_PER_WORD = 5_000;
     uint32 public constant TELEPORTER_RECEIVE_MESSAGE_GAS_OVERHEAD = 300_000;
 
-    constructor(
-        address teleporterRegistryAddress_,
-        address vrfProxyRegistry_,
-        address chainlinkVRFWrapper_,
-        address link_
-    )
+    constructor(address teleporterRegistryAddress_, address vrfProxyRegistry_, address vrfV2PlusWrapper_)
         TeleporterRegistryOwnableApp(teleporterRegistryAddress_, msg.sender, 1)
-        VRFV2WrapperConsumerBase(link_, chainlinkVRFWrapper_)
+        VRFV2PlusWrapperConsumerBase(vrfV2PlusWrapper_)
     {
         if (vrfProxyRegistry_ == address(0)) revert VRFProxyRegistryAddressIsZero();
         vrfProxyRegistry = IVRFProxyRegistry(vrfProxyRegistry_);
@@ -73,7 +69,7 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterRegist
         unchecked {
             balance += amount;
         }
-        LINK.transferFrom(msg.sender, address(this), amount);
+        i_linkToken.transferFrom(msg.sender, address(this), amount);
         emit Deposit(msg.sender, amount);
     }
 
@@ -83,7 +79,7 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterRegist
         unchecked {
             balance -= amount;
         }
-        LINK.transfer(msg.sender, amount);
+        i_linkToken.transfer(msg.sender, amount);
         emit Withdraw(amount);
     }
 
@@ -193,8 +189,13 @@ contract VRFProvider is IVRFProvider, VRFV2WrapperConsumerBase, TeleporterRegist
 
         emit Payment(sourceBlockchainID, originSenderAddress, proxyRequestID, total);
 
-        // Pass the request on the Chainlink VRF coordinator.
-        uint256 chainlinkVRFRequestID = requestRandomness(total, request.minimumRequestConfirmations, numWords);
+        // Pass the request on the Chainlink VRF coordinator
+        (uint256 chainlinkVRFRequestID,) = requestRandomness(
+            total,
+            request.minimumRequestConfirmations,
+            numWords,
+            VRFV2PlusClient._argsToBytes(VRFV2PlusClient.ExtraArgsV1({nativePayment: false}))
+        );
 
         // solhint-disable-next-line
         emit VRFRequestReceived(

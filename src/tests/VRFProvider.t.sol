@@ -7,7 +7,7 @@ import {VRFProxyRegistry} from "../VRFProxyRegistry.sol";
 import {LinkToken} from "../mocks/LinkToken.sol";
 import {Ownable} from "@openzeppelin/contracts@5.0.2/access/Ownable.sol";
 import {VRFRequestInfo, VRFResponseInfo} from "../interfaces/IVRF.sol";
-import {VRFV2WrapperInterface} from "@chainlink/contracts/src/v0.8/vrf/interfaces/VRFV2WrapperInterface.sol";
+import {IVRFV2PlusWrapper} from "@chainlink/contracts/src/v0.8/vrf/dev/interfaces/IVRFV2PlusWrapper.sol";
 import {TeleporterRegistry} from "@teleporter/registry/TeleporterRegistry.sol";
 import {ITeleporterMessenger, TeleporterMessageInput, TeleporterFeeInfo} from "@teleporter/ITeleporterMessenger.sol";
 
@@ -66,7 +66,6 @@ contract VRFProviderTest is Test {
             ),
             abi.encode(MOCK_LATEST_TELEPORTER_VERSION)
         );
-
         managers = new address[](1);
         managers[0] = address(this);
         proxies = new address[](1);
@@ -76,11 +75,13 @@ contract VRFProviderTest is Test {
         vrfProxyRegistry.addProxies(MOCK_VRF_PROXY_BLOCKCHAIN_ID, proxies);
 
         linkToken = new LinkToken();
+
+        vm.mockCall(
+            MOCK_CHAINLINK_VRF_WRAPPER_ADDRESS, abi.encodeWithSignature("link()"), abi.encode(address(linkToken))
+        );
+
         provider = new VRFProvider(
-            MOCK_TELEPORTER_REGISTRY_ADDRESS,
-            address(vrfProxyRegistry),
-            MOCK_CHAINLINK_VRF_WRAPPER_ADDRESS,
-            address(linkToken)
+            MOCK_TELEPORTER_REGISTRY_ADDRESS, address(vrfProxyRegistry), MOCK_CHAINLINK_VRF_WRAPPER_ADDRESS
         );
 
         linkToken.approve(address(provider), 10 ** 23);
@@ -89,9 +90,7 @@ contract VRFProviderTest is Test {
 
     function testSetUpToFailDueToZeroVRFProxyRegistryAddress() public {
         vm.expectRevert(IVRFProvider.VRFProxyRegistryAddressIsZero.selector);
-        new VRFProvider(
-            MOCK_TELEPORTER_REGISTRY_ADDRESS, address(0), MOCK_CHAINLINK_VRF_WRAPPER_ADDRESS, address(linkToken)
-        );
+        new VRFProvider(MOCK_TELEPORTER_REGISTRY_ADDRESS, address(0), MOCK_CHAINLINK_VRF_WRAPPER_ADDRESS);
     }
 
     function testDepositToFailDueToNoAuthorizedFunder() public {
@@ -225,12 +224,12 @@ contract VRFProviderTest is Test {
         uint32 total = TELEPORTER_CALLBACK_GAS_LIMIT_BASE + (TELEPORTER_CALLBACK_GAS_LIMIT_PER_WORD * request.numWords);
         vm.mockCall(
             MOCK_CHAINLINK_VRF_WRAPPER_ADDRESS,
-            abi.encodeCall(VRFV2WrapperInterface.calculateRequestPrice, (total)),
+            abi.encodeWithSelector(IVRFV2PlusWrapper.calculateRequestPrice.selector, (total)),
             abi.encode(uint256(300 * 1e18))
         );
         vm.mockCall(
             MOCK_CHAINLINK_VRF_WRAPPER_ADDRESS,
-            abi.encodeCall(VRFV2WrapperInterface.lastRequestId, ()),
+            abi.encodeCall(IVRFV2PlusWrapper.lastRequestId, ()),
             abi.encode(mockChainlinkVRFRequestID)
         );
         vm.prank(MOCK_TELEPOTER_MESSENGER_ADDRESS);
