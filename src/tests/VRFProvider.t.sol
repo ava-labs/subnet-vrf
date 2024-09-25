@@ -90,9 +90,7 @@ contract VRFProviderTest is Test {
 
     function testSetUpToFailDueToZeroVRFProxyRegistryAddress() public {
         vm.expectRevert(IVRFProvider.VRFProxyRegistryAddressIsZero.selector);
-        new VRFProvider(
-            MOCK_TELEPORTER_REGISTRY_ADDRESS, address(0), MOCK_CHAINLINK_VRF_WRAPPER_ADDRESS
-        );
+        new VRFProvider(MOCK_TELEPORTER_REGISTRY_ADDRESS, address(0), MOCK_CHAINLINK_VRF_WRAPPER_ADDRESS);
     }
 
     function testDepositToFailDueToNoAuthorizedFunder() public {

@@ -31,11 +31,7 @@ contract VRFProvider is IVRFProvider, VRFV2PlusWrapperConsumerBase, TeleporterRe
     uint32 public constant TELEPORTER_CALLBACK_GAS_LIMIT_PER_WORD = 5_000;
     uint32 public constant TELEPORTER_RECEIVE_MESSAGE_GAS_OVERHEAD = 300_000;
 
-    constructor(
-        address teleporterRegistryAddress_,
-        address vrfProxyRegistry_,
-        address vrfV2PlusWrapper_
-    )
+    constructor(address teleporterRegistryAddress_, address vrfProxyRegistry_, address vrfV2PlusWrapper_)
         TeleporterRegistryOwnableApp(teleporterRegistryAddress_, msg.sender, 1)
         VRFV2PlusWrapperConsumerBase(vrfV2PlusWrapper_)
     {
