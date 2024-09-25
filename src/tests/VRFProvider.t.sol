@@ -1,18 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.18;
+pragma solidity 0.8.25;
 
 import {Test} from "forge-std/Test.sol";
 import {IVRFProvider, VRFProvider} from "../VRFProvider.sol";
 import {VRFProxyRegistry} from "../VRFProxyRegistry.sol";
 import {LinkToken} from "../mocks/LinkToken.sol";
+import {Ownable} from "@openzeppelin/contracts@5.0.2/access/Ownable.sol";
 import {VRFRequestInfo, VRFResponseInfo} from "../interfaces/IVRF.sol";
-import {VRFV2WrapperInterface} from "@chainlink/contracts/src/v0.8/vrf/interfaces/VRFV2WrapperInterface.sol";
-import {TeleporterRegistry} from "@teleporter/contracts/src/Teleporter/upgrades/TeleporterRegistry.sol";
-import {
-    ITeleporterMessenger,
-    TeleporterMessageInput,
-    TeleporterFeeInfo
-} from "@teleporter/contracts/src/Teleporter/ITeleporterMessenger.sol";
+import {IVRFV2PlusWrapper} from "@chainlink/contracts/src/v0.8/vrf/dev/interfaces/IVRFV2PlusWrapper.sol";
+import {TeleporterRegistry} from "@teleporter/registry/TeleporterRegistry.sol";
+import {ITeleporterMessenger, TeleporterMessageInput, TeleporterFeeInfo} from "@teleporter/ITeleporterMessenger.sol";
 
 contract VRFProviderTest is Test {
     address public constant MOCK_TELEPOTER_MESSENGER_ADDRESS = address(0x1111);
@@ -44,7 +41,12 @@ contract VRFProviderTest is Test {
         address indexed consumer
     );
     event VRFRequestFulfilled(uint256 indexed proxyRequestID, uint256 indexed chainlinkVRFRequestID, uint32 numWords);
-    event Payment(address indexed proxyAddress, uint256 indexed proxyRequestID, uint256 total);
+    event Withdraw(uint256 amount);
+    event FunderAdded(address indexed funder);
+    event FunderRemoved(address indexed funder);
+    event Payment(
+        bytes32 indexed sourceBlockchainId, address indexed proxyAddress, uint256 indexed proxyRequestID, uint256 total
+    );
 
     function setUp() public virtual {
         vm.mockCall(
@@ -65,7 +67,6 @@ contract VRFProviderTest is Test {
             ),
             abi.encode(MOCK_LATEST_TELEPORTER_VERSION)
         );
-
         managers = new address[](1);
         managers[0] = address(this);
         proxies = new address[](1);
@@ -77,15 +78,31 @@ contract VRFProviderTest is Test {
         vrfProxyRegistry.addProxies(MOCK_VRF_PROXY_BLOCKCHAIN_ID, proxies, allowances);
 
         linkToken = new LinkToken();
+
+        vm.mockCall(
+            MOCK_CHAINLINK_VRF_WRAPPER_ADDRESS, abi.encodeWithSignature("link()"), abi.encode(address(linkToken))
+        );
+
         provider = new VRFProvider(
-            MOCK_TELEPORTER_REGISTRY_ADDRESS,
-            address(vrfProxyRegistry),
-            MOCK_CHAINLINK_VRF_WRAPPER_ADDRESS,
-            address(linkToken)
+            MOCK_TELEPORTER_REGISTRY_ADDRESS, address(vrfProxyRegistry), MOCK_CHAINLINK_VRF_WRAPPER_ADDRESS
         );
 
         linkToken.approve(address(provider), 10 ** 23);
         provider.deposit(10 ** 23);
+    }
+
+    function testSetUpToFailDueToZeroVRFProxyRegistryAddress() public {
+        vm.expectRevert(IVRFProvider.VRFProxyRegistryAddressIsZero.selector);
+        new VRFProvider(MOCK_TELEPORTER_REGISTRY_ADDRESS, address(0), MOCK_CHAINLINK_VRF_WRAPPER_ADDRESS);
+    }
+
+    function testDepositToFailDueToNoAuthorizedFunder() public {
+        address nonFunder = vm.addr(0x5555);
+        linkToken.approve(address(this), 10 ** 18);
+        linkToken.transferFrom(address(this), nonFunder, 10 ** 18);
+        vm.prank(nonFunder);
+        vm.expectRevert(IVRFProvider.NotAnAuthorizedFunder.selector);
+        provider.deposit(10 ** 18);
     }
 
     function testReceiveTeleporterMessageSuccess() public {
@@ -172,21 +189,55 @@ contract VRFProviderTest is Test {
         provider.rawFulfillRandomWords(123, mockRandomWords);
     }
 
+    function testWithdrawSuccess() public {
+        vm.expectEmit(true, true, true, true, address(provider));
+        emit Withdraw(10 ** 18);
+        provider.withdraw(10 ** 18);
+    }
+
+    function testWithdrawToFailDueToInsufficientBalance() public {
+        vm.expectRevert(IVRFProvider.InsufficientBalance.selector);
+        provider.withdraw(10 ** 24);
+    }
+
+    function testWithdrawToFailDueToUnauthorizedCaller() public {
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(0x5555)));
+        vm.prank(address(0x5555));
+        provider.withdraw(10 ** 18);
+    }
+
+    function testAddFundersSuccess() public {
+        address[] memory funders = new address[](1);
+        funders[0] = address(0x5555);
+        vm.expectEmit(true, true, true, true, address(provider));
+        emit FunderAdded(address(0x5555));
+        provider.addFunders(funders);
+    }
+
+    function testRemoveFundersSuccess() public {
+        address[] memory funders = new address[](1);
+        funders[0] = address(0x5555);
+        provider.addFunders(funders);
+        vm.expectEmit(true, true, true, true, address(provider));
+        emit FunderRemoved(address(0x5555));
+        provider.removeFunders(funders);
+    }
+
     function _submitVRFRequest(VRFRequestInfo memory request, uint256 mockChainlinkVRFRequestID) internal {
         uint32 total = TELEPORTER_CALLBACK_GAS_LIMIT_BASE + (TELEPORTER_CALLBACK_GAS_LIMIT_PER_WORD * request.numWords);
         vm.mockCall(
             MOCK_CHAINLINK_VRF_WRAPPER_ADDRESS,
-            abi.encodeCall(VRFV2WrapperInterface.calculateRequestPrice, (total)),
+            abi.encodeWithSelector(IVRFV2PlusWrapper.calculateRequestPrice.selector, (total)),
             abi.encode(uint256(300 * 1e18))
         );
         vm.mockCall(
             MOCK_CHAINLINK_VRF_WRAPPER_ADDRESS,
-            abi.encodeCall(VRFV2WrapperInterface.lastRequestId, ()),
+            abi.encodeCall(IVRFV2PlusWrapper.lastRequestId, ()),
             abi.encode(mockChainlinkVRFRequestID)
         );
         vm.prank(MOCK_TELEPOTER_MESSENGER_ADDRESS);
         vm.expectEmit(true, true, true, true, address(provider));
-        emit Payment(MOCK_VRF_PROXY_ADDRESS, request.requestID, total);
+        emit Payment(MOCK_VRF_PROXY_BLOCKCHAIN_ID, MOCK_VRF_PROXY_ADDRESS, request.requestID, total);
         vm.expectEmit(true, true, true, true, address(provider));
         // solhint-disable-next-line
         emit VRFRequestReceived(
@@ -202,8 +253,13 @@ contract VRFProviderTest is Test {
         );
     }
 
-    function _getMockVRFRequestInfo() internal pure returns (VRFRequestInfo memory) {
-        return
-            VRFRequestInfo({requestID: 543, minimumRequestConfirmations: 200, callbackGasLimit: 200_000, numWords: 1});
+    function _getMockVRFRequestInfo() internal view returns (VRFRequestInfo memory) {
+        return VRFRequestInfo({
+            requestID: 543,
+            minimumRequestConfirmations: 200,
+            callbackGasLimit: 200_000,
+            numWords: 1,
+            consumer: address(this)
+        });
     }
 }
