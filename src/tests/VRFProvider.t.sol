@@ -45,7 +45,10 @@ contract VRFProviderTest is Test {
     event FunderAdded(address indexed funder);
     event FunderRemoved(address indexed funder);
     event Payment(
-        bytes32 indexed sourceBlockchainId, address indexed proxyAddress, uint256 indexed proxyRequestID, uint256 total
+        bytes32 indexed sourceBlockchainId,
+        address indexed proxyAddress,
+        uint256 indexed proxyRequestID,
+        uint256 requestPrice
     );
 
     function setUp() public virtual {
@@ -224,11 +227,13 @@ contract VRFProviderTest is Test {
     }
 
     function _submitVRFRequest(VRFRequestInfo memory request, uint256 mockChainlinkVRFRequestID) internal {
-        uint32 total = TELEPORTER_CALLBACK_GAS_LIMIT_BASE + (TELEPORTER_CALLBACK_GAS_LIMIT_PER_WORD * request.numWords);
+        uint32 callbackGasLimit =
+            TELEPORTER_CALLBACK_GAS_LIMIT_BASE + (TELEPORTER_CALLBACK_GAS_LIMIT_PER_WORD * request.numWords);
+        uint256 requestPrice = uint256(5 * 1e18);
         vm.mockCall(
             MOCK_CHAINLINK_VRF_WRAPPER_ADDRESS,
-            abi.encodeWithSelector(IVRFV2PlusWrapper.calculateRequestPrice.selector, (total)),
-            abi.encode(uint256(300 * 1e18))
+            abi.encodeWithSelector(IVRFV2PlusWrapper.calculateRequestPrice.selector, callbackGasLimit, request.numWords),
+            abi.encode(requestPrice)
         );
         vm.mockCall(
             MOCK_CHAINLINK_VRF_WRAPPER_ADDRESS,
@@ -237,7 +242,7 @@ contract VRFProviderTest is Test {
         );
         vm.prank(MOCK_TELEPOTER_MESSENGER_ADDRESS);
         vm.expectEmit(true, true, true, true, address(provider));
-        emit Payment(MOCK_VRF_PROXY_BLOCKCHAIN_ID, MOCK_VRF_PROXY_ADDRESS, request.requestID, total);
+        emit Payment(MOCK_VRF_PROXY_BLOCKCHAIN_ID, MOCK_VRF_PROXY_ADDRESS, request.requestID, requestPrice);
         vm.expectEmit(true, true, true, true, address(provider));
         // solhint-disable-next-line
         emit VRFRequestReceived(

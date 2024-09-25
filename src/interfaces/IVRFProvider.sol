@@ -64,10 +64,13 @@ interface IVRFProvider is ITeleporterReceiver {
      * @param proxyAddress is an address of a proxy through which the request was made on the subnet of origin
      * @param proxyRequestID is an id of a request that was made through the proxy on the subnet of origin
      * this parameter helps us retrieve request data through the proxy using a specific id, proxy request ids are local.
-     * @param total is a request price total.
+     * @param requestPrice is a request price total.
      */
     event Payment(
-        bytes32 indexed sourceBlockchainID, address indexed proxyAddress, uint256 indexed proxyRequestID, uint256 total
+        bytes32 indexed sourceBlockchainID,
+        address indexed proxyAddress,
+        uint256 indexed proxyRequestID,
+        uint256 requestPrice
     );
 
     /**

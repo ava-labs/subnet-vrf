@@ -184,8 +184,10 @@ contract VRFProvider is IVRFProvider, VRFV2PlusWrapperConsumerBase, TeleporterRe
         uint32 numWords = request.numWords;
         if (proxyRequestID == 0) revert InvalidProxyRequestID();
 
-        // Compute the request total price.
-        uint32 total = TELEPORTER_CALLBACK_GAS_LIMIT_BASE + (TELEPORTER_CALLBACK_GAS_LIMIT_PER_WORD * numWords);
+        uint32 callbackGasLimit =
+            TELEPORTER_CALLBACK_GAS_LIMIT_BASE + (TELEPORTER_CALLBACK_GAS_LIMIT_PER_WORD * numWords);
+
+        uint256 requestPrice = i_vrfV2PlusWrapper.calculateRequestPrice(callbackGasLimit, numWords);
 
         // Retrieve proxy allowance value from the registry.
         uint256 allowance = vrfProxyRegistry.getProxyAllowance(sourceBlockchainID, originSenderAddress);
@@ -194,9 +196,9 @@ contract VRFProvider is IVRFProvider, VRFV2PlusWrapperConsumerBase, TeleporterRe
         // Once a new day approaches the spendings are reset.
         if (proxySpendings_.day < day) {
             proxySpendings_.day = day;
-            proxySpendings_.spendings = total;
+            proxySpendings_.spendings = requestPrice;
         } else {
-            proxySpendings_.spendings += total;
+            proxySpendings_.spendings += requestPrice;
         }
         // If allowance is reached - revert.
         if (proxySpendings_.spendings > allowance) {
@@ -204,16 +206,16 @@ contract VRFProvider is IVRFProvider, VRFV2PlusWrapperConsumerBase, TeleporterRe
         }
 
         // Ensure that stakeholder has enough balance
-        if (total > balance) revert InsufficientBalance();
+        if (requestPrice > balance) revert InsufficientBalance();
         unchecked {
-            balance -= total;
+            balance -= requestPrice;
         }
 
-        emit Payment(sourceBlockchainID, originSenderAddress, proxyRequestID, total);
+        emit Payment(sourceBlockchainID, originSenderAddress, proxyRequestID, requestPrice);
 
         // Pass the request on the Chainlink VRF coordinator
         (uint256 chainlinkVRFRequestID,) = requestRandomness(
-            total,
+            callbackGasLimit,
             request.minimumRequestConfirmations,
             numWords,
             VRFV2PlusClient._argsToBytes(VRFV2PlusClient.ExtraArgsV1({nativePayment: false}))
