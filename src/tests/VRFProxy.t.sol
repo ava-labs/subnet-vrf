@@ -1,17 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.18;
+pragma solidity 0.8.25;
 
 import {Test} from "forge-std/Test.sol";
 import {VRFProxy, IVRFProxy} from "../VRFProxy.sol";
 import {VRFRequestInfo, VRFResponseInfo} from "../interfaces/IVRF.sol";
 import {VRFConsumerRegistry} from "../VRFConsumerRegistry.sol";
-import {TeleporterRegistry} from "@teleporter/contracts/src/Teleporter/upgrades/TeleporterRegistry.sol";
-import {
-    ITeleporterMessenger,
-    TeleporterMessageInput,
-    TeleporterFeeInfo
-} from "@teleporter/contracts/src/Teleporter/ITeleporterMessenger.sol";
+import {TeleporterRegistry} from "@teleporter/registry/TeleporterRegistry.sol";
+import {ITeleporterMessenger, TeleporterMessageInput, TeleporterFeeInfo} from "@teleporter/ITeleporterMessenger.sol";
 import {VRFConsumer} from "../mocks/VRFConsumer.sol";
+import {IAccessControl} from "@openzeppelin/contracts@5.0.2/access/IAccessControl.sol";
 
 contract VRFProxyTest is Test {
     address public constant MOCK_TELEPOTER_MESSENGER_ADDRESS = address(0x1111);
@@ -22,6 +19,8 @@ contract VRFProxyTest is Test {
     address public constant MOCK_VRF_PROVIDER_ADDRESS = address(0x3333);
     address public constant MOCK_CONSUMER = address(0x4444);
     address public constant NON_OWNER_ADDRESS = address(0x6666);
+    bytes32 public constant CONSUMER_MANAGER = keccak256("CONSUMER_MANAGER");
+    bytes32 public constant DEFAULT_ADMIN_ROLE = bytes32(0);
 
     VRFConsumerRegistry public vrfConsumerRegistry;
     VRFProxy public vrfProxy;
@@ -39,7 +38,7 @@ contract VRFProxyTest is Test {
         uint32 callbackGasLimit,
         uint32 numWords
     );
-    event RandomWordsFulfilled(uint256 indexed requestID, bool success);
+    event RandomWordsFulfilled(uint256 indexed requestID);
 
     function setUp() public virtual {
         vm.mockCall(
@@ -77,6 +76,27 @@ contract VRFProxyTest is Test {
         );
     }
 
+    function testSetUpToFailDueToVRFProviderZeroAddress() public {
+        vm.expectRevert(IVRFProxy.VRFProviderAddressIsZero.selector);
+        new VRFProxy(
+            MOCK_TELEPORTER_REGISTRY_ADDRESS, address(vrfConsumerRegistry), MOCK_VRF_PROVIDER_BLOCKCHAIN_ID, address(0)
+        );
+    }
+
+    function testSetUpToFailDueToVRFConsumerRegistryZeroAddress() public {
+        vm.expectRevert(IVRFProxy.VRFConsumerRegistryAddressIsZero.selector);
+        new VRFProxy(
+            MOCK_TELEPORTER_REGISTRY_ADDRESS, address(0), MOCK_VRF_PROVIDER_BLOCKCHAIN_ID, MOCK_VRF_PROVIDER_ADDRESS
+        );
+    }
+
+    function testSetUpToFailDueToVRFProviderBlockchainIDZero() public {
+        vm.expectRevert(IVRFProxy.VRFProviderBlockchainIDIsZero.selector);
+        new VRFProxy(
+            MOCK_TELEPORTER_REGISTRY_ADDRESS, address(vrfConsumerRegistry), bytes32(0), MOCK_VRF_PROVIDER_ADDRESS
+        );
+    }
+
     function testAddConsumerSucess() public {
         _addConsumer(MOCK_CONSUMER);
     }
@@ -89,7 +109,9 @@ contract VRFProxyTest is Test {
 
     function testAddConsumerNotOwner() public {
         vm.expectRevert(
-            "AccessControl: account 0x0000000000000000000000000000000000006666 is missing role 0x795edd50d89cf0f09d5fb90f6c834853abd2897512ea74c56cf89c0a94b5da8b"
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, NON_OWNER_ADDRESS, CONSUMER_MANAGER
+            )
         );
         vm.prank(NON_OWNER_ADDRESS);
         vrfConsumerRegistry.addConsumers(consumers);
@@ -122,9 +144,11 @@ contract VRFProxyTest is Test {
         assertEq(vm.getRecordedLogs().length, 0);
     }
 
-    function testRemoveConsumerNotOwner() public {
+    function testRemoveConsumerNotManager() public {
         vm.expectRevert(
-            "AccessControl: account 0x0000000000000000000000000000000000006666 is missing role 0x0000000000000000000000000000000000000000000000000000000000000000"
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, NON_OWNER_ADDRESS, CONSUMER_MANAGER
+            )
         );
         // NON_OWNER_ADDRESS does not have the DEFAULT_ADMIN_ROLE
         vm.prank(NON_OWNER_ADDRESS);
@@ -139,14 +163,15 @@ contract VRFProxyTest is Test {
         uint256 expectedRequestID = vrfProxy.requestNonce() + 1;
         uint16 mockMinConfs = 1;
         uint32 mockCallbackGasLimit = 213_000;
-        uint32 mockNumWords = 20;
+        uint32 mockNumWords = 2;
 
         // Construct a request.
         VRFRequestInfo memory expectedRequest = VRFRequestInfo({
             requestID: expectedRequestID,
             minimumRequestConfirmations: mockMinConfs,
             callbackGasLimit: mockCallbackGasLimit,
-            numWords: mockNumWords
+            numWords: mockNumWords,
+            consumer: address(this)
         });
         // Construct the teleporter message input.
         TeleporterMessageInput memory tmi = TeleporterMessageInput({
@@ -155,7 +180,7 @@ contract VRFProxyTest is Test {
             feeInfo: TeleporterFeeInfo({feeTokenAddress: address(0), amount: 0}),
             requiredGasLimit: vrfProxy.VRF_REQUEST_REQUIRED_GAS(),
             allowedRelayerAddresses: new address[](0),
-            message: abi.encode(expectedRequest, address(this))
+            message: abi.encode(expectedRequest)
         });
 
         // Create precise mock call and expectation.
@@ -204,13 +229,10 @@ contract VRFProxyTest is Test {
             MOCK_CONSUMER, abi.encodeCall(consumer.rawFulfillRandomWords, (requestID, mockValues)), new bytes(0)
         );
         vm.expectCall(
-            MOCK_CONSUMER,
-            0,
-            callbackGasLimit,
-            abi.encodeWithSelector(consumer.rawFulfillRandomWords.selector, requestID, mockValues)
+            MOCK_CONSUMER, 0, abi.encodeWithSelector(consumer.rawFulfillRandomWords.selector, requestID, mockValues)
         );
         vm.expectEmit(true, true, true, true, address(vrfProxy));
-        emit RandomWordsFulfilled(requestID, true);
+        emit RandomWordsFulfilled(requestID);
         vm.prank(MOCK_TELEPOTER_MESSENGER_ADDRESS);
         vrfProxy.receiveTeleporterMessage(
             MOCK_VRF_PROVIDER_BLOCKCHAIN_ID, MOCK_VRF_PROVIDER_ADDRESS, abi.encode(response)
@@ -218,6 +240,9 @@ contract VRFProxyTest is Test {
     }
 
     function testReceiveTeleporterMessageSuccessCallReverts() public {
+        // There is no such case anymore, if a call to consumer reverts the tx should revert as well,
+        // this is in order to enable execution retrying through the teleporter.
+        vm.skip(true);
         // Place a request from the expected consumer.
         uint32 callbackGasLimit = 100_000;
         uint256 requestID = _makeRandomWordsRequest(MOCK_CONSUMER, callbackGasLimit);
@@ -237,8 +262,6 @@ contract VRFProxyTest is Test {
         vm.expectCall(
             MOCK_CONSUMER, 0, callbackGasLimit, abi.encodeCall(consumer.rawFulfillRandomWords, (requestID, mockValues))
         );
-        vm.expectEmit(true, true, true, true, address(vrfProxy));
-        emit RandomWordsFulfilled(requestID, false);
         vm.prank(MOCK_TELEPOTER_MESSENGER_ADDRESS);
         vrfProxy.receiveTeleporterMessage(
             MOCK_VRF_PROVIDER_BLOCKCHAIN_ID, MOCK_VRF_PROVIDER_ADDRESS, abi.encode(response)

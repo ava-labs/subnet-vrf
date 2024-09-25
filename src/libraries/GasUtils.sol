@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.18;
+pragma solidity 0.8.25;
 
 library GasUtils {
     /**
@@ -10,11 +10,11 @@ library GasUtils {
     uint256 public constant GAS_FOR_CALL_EXACT_CHECK = 5_000;
 
     /**
-     * Implementation taken from VRFCoordinatorV2.sol.
-     * @dev calls target address with exactly gasAmount gas and data as calldata
+     * Implementation taken from VRFCoordinatorV2.sol and modified (_callWithExactGas).
+     * @dev calls target address with total available gas >= gasAmount gas and data as calldata
      * or reverts if at least gasAmount gas is not available.
      */
-    function _callWithExactGas(uint256 gasAmount, address target, bytes memory data) internal returns (bool) {
+    function _callWithSufficientGas(uint256 gasAmount, address target, bytes memory data) internal returns (bool) {
         bool success;
         // solhint-disable-next-line
         assembly {
@@ -34,7 +34,7 @@ library GasUtils {
             if iszero(extcodesize(target)) { revert(0, 0) }
             // call and return whether we succeeded. ignore return data
             // call(gas,addr,value,argsOffset,argsLength,retOffset,retLength)
-            success := call(gasAmount, target, 0, add(data, 0x20), mload(data), 0, 0)
+            success := call(g, target, 0, add(data, 0x20), mload(data), 0, 0)
         }
         return success;
     }
