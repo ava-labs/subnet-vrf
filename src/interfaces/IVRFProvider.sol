@@ -23,6 +23,19 @@ interface IVRFProvider is ITeleporterReceiver {
     }
 
     /**
+     * @dev Proxy spendings structure contains necessary values to track in order to implement autonomous allowance mechanism.
+     * @dev This allowance system enables proxies to have certain allowance on a daily basis, each day allowance is reset to a predetermined value.
+     * @param day is an identifier of a day in which last request was made, it is set in order to track spendings in a certain day,
+     * and reset spendings to zero once new day approaches.
+     * @param spendings is a total of spendings made in a single day by a proxy (this variable will show value for the last day
+     * in which proxy was used or just zero if it was never used).
+     */
+    struct ProxySpendings {
+        uint256 day;
+        uint256 spendings;
+    }
+
+    /**
      * @dev Emitted when a new authorized funder is added.
      * @param funder is a newly added funder address.
      */
@@ -104,6 +117,14 @@ interface IVRFProvider is ITeleporterReceiver {
     error InvalidProxyRequestID();
     error InvalidChainlinkVRFRequestID();
     error VRFProxyRegistryAddressIsZero();
+    error InvalidProxyAddress();
+    /**
+     * @dev Reverting when proxy crosses its spending limit for the day.
+     * @param sourceBlockchainID is the id of a blockchain where proxy is deployed.
+     * @param originSenderAddress is a proxy address.
+     * @param day is an identifier of a day on which the event has occured.
+     */
+    error AllowanceLimitReached(bytes32 sourceBlockchainID, address originSenderAddress, uint256 day);
     error RequestNotCached();
 
     /**

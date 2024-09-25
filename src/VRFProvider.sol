@@ -18,6 +18,10 @@ contract VRFProvider is IVRFProvider, VRFV2PlusWrapperConsumerBase, TeleporterRe
     /// @inheritdoc IVRFProvider
     mapping(address account => bool isAllowedToDeposit) public authorizedFunders;
     /**
+     * @dev Double mapping tracking the proxy spendings data - a part of the allowance system.
+     */
+    mapping(bytes32 blockchainID => mapping(address proxy => ProxySpendings proxySpendings)) public proxySpendings;
+    /**
      * @dev Tracks response information, manual response bridging support.
      */
     mapping(uint256 chainlinkVRFRequestID => VRFResponseInfo response) public cachedResponses;
@@ -170,6 +174,8 @@ contract VRFProvider is IVRFProvider, VRFV2PlusWrapperConsumerBase, TeleporterRe
         if (!vrfProxyRegistry.isApprovedProxy(sourceBlockchainID, originSenderAddress)) {
             revert InvalidCallerOrSourceChainID();
         }
+        // Retrieve proxy spendings data.
+        ProxySpendings storage proxySpendings_ = proxySpendings[sourceBlockchainID][originSenderAddress];
 
         // Decode the request.
         (VRFRequestInfo memory request) = abi.decode(message, (VRFRequestInfo));
@@ -181,7 +187,23 @@ contract VRFProvider is IVRFProvider, VRFV2PlusWrapperConsumerBase, TeleporterRe
         // Compute the request total price.
         uint32 total = TELEPORTER_CALLBACK_GAS_LIMIT_BASE + (TELEPORTER_CALLBACK_GAS_LIMIT_PER_WORD * numWords);
 
-        // Ensure that stakeholder has enough balance.
+        // Retrieve proxy allowance value from the registry.
+        uint256 allowance = vrfProxyRegistry.getProxyAllowance(sourceBlockchainID, originSenderAddress);
+        // Determine the current day.
+        uint256 day = block.timestamp / 1 days;
+        // Once a new day approaches the spendings are reset.
+        if (proxySpendings_.day < day) {
+            proxySpendings_.day = day;
+            proxySpendings_.spendings = total;
+        } else {
+            proxySpendings_.spendings += total;
+        }
+        // If allowance is reached - revert.
+        if (proxySpendings_.spendings > allowance) {
+            revert AllowanceLimitReached(sourceBlockchainID, originSenderAddress, day);
+        }
+
+        // Ensure that stakeholder has enough balance
         if (total > balance) revert InsufficientBalance();
         unchecked {
             balance -= total;
