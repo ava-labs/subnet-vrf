@@ -1,4 +1,4 @@
-// SPDX-License-IDentifier: UNLICENSED
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.25;
 
 import {IAccessControl} from "@openzeppelin/contracts@5.0.2/access/IAccessControl.sol";
