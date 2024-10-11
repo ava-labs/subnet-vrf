@@ -14,6 +14,7 @@ source $REPO_BASE_PATH/config
 # Retrieve the user address from private key
 user_address=$(cast wallet address --private-key $user_private_key)
 link_amount="5000000000000000000"
+vrf_proxy_allowance="0" # Means the default allowance will be used => 150e18.
 # Calculate the next expected contract address for the given deployer on both the C-Chain and Subnet.
 # These nonces/addresses will be used to deploy the VRF Provider and Proxy contracts to.
 
@@ -58,7 +59,7 @@ echo "Deployed VRFProxyRegistry to C-Chain: $vrf_proxy_registry_address."
 echo "Deploying VRFProvider to C-Chain..."
 forge create --private-key $user_private_key \
     src/VRFProvider.sol:VRFProvider \
-    --constructor-args $c_chain_teleporter_registry_address $vrf_proxy_registry_address $c_chain_vrf_wrapper_address $c_chain_link_token_address \
+    --constructor-args $c_chain_teleporter_registry_address $vrf_proxy_registry_address $c_chain_vrf_v2_plus_wrapper_address \
     --rpc-url $c_chain_url > /dev/null
 echo "Deployed VRFProvider to C-Chain: $vrf_provider_address."
 
@@ -89,8 +90,8 @@ echo "Deployed VRFConsumer to Subnet: $vrf_consumer_mock_address."
 # Approve the deployed VRFProxy for Subnet Id on VRFProxyRegistry
 echo "Approving VRFProxy on VRFProxyRegistry..."
 cast send $vrf_proxy_registry_address \
-  "addProxies(bytes32,address[])" \
-  $subnet_blockchain_id "[$vrf_proxy_address]" \
+  "addProxies(bytes32,address[],uint256[])" \
+  $subnet_blockchain_id "[$vrf_proxy_address]" "[$vrf_proxy_allowance]" \
   --private-key $user_private_key --rpc-url $c_chain_url \
   > /dev/null
 echo "VRFProxy Approved."
