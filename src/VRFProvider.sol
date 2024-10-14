@@ -1,4 +1,9 @@
-// SPDX-License-Identifier: UNLICENSED
+// (c) 2023, Ava Labs, Inc. All rights reserved.
+// SPDX-License-Identifier: LicenseRef-AvaLabsProprietary
+
+// This code is licensed under a custom license.
+// See the file LICENSE for licensing terms.
+
 pragma solidity 0.8.25;
 
 import {IVRFProvider} from "./interfaces/IVRFProvider.sol";
