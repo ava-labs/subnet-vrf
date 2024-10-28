@@ -29,7 +29,7 @@ contract VRFProxyRegistry is IVRFProxyRegistry, AccessControl {
     }
 
     /// @inheritdoc IVRFProxyRegistry
-    function setDefaultProxyAllowance(uint256 defaultProxyAllowance_) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setDefaultProxyAllowance(uint256 defaultProxyAllowance_) external onlyRole(PROXY_MANAGER) {
         defaultProxyAllowance = defaultProxyAllowance_;
         emit DefaultProxyAllowanceSet(defaultProxyAllowance_);
     }
