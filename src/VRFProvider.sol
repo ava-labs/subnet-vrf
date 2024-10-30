@@ -1,4 +1,4 @@
-// (c) 2023, Ava Labs, Inc. All rights reserved.
+// (c) 2024, Ava Labs, Inc. All rights reserved.
 // SPDX-License-Identifier: LicenseRef-AvaLabsProprietary
 
 // This code is licensed under a custom license.
