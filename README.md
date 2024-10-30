@@ -79,7 +79,7 @@ _See `./scripts/deploy.sh` for details._
 $ ./scripts/deploy.sh
 ```
 
-### Test Arch
+### Test
 
 Mock consumer provides features of a basic guessing game. Using the following scripts you can make a guess of a random number and later check if the request has been fulfilled.
 
@@ -90,3 +90,7 @@ $ ./scripts/takeAGuess.sh
 ```shell
 $ ./scripts/checkResponse.sh
 ```
+
+## License
+
+This repository is covered under the Ava Labs Proprietary License. For the complete license terms see [LICENSE](./LICENSE).
