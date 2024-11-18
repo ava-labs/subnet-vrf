@@ -2,13 +2,13 @@
 pragma solidity 0.8.25;
 
 import {IVRFProxy} from "../interfaces/IVRFProxy.sol";
-import {VRFConsumerBaseV2} from "@chainlink/contracts/src/v0.8/vrf/VRFConsumerBaseV2.sol";
+import {VRFConsumerBaseV2Plus} from "@chainlink/contracts/src/v0.8/vrf/dev/VRFConsumerBaseV2Plus.sol";
 
 /**
  * THIS IS AN EXAMPLE CONTRACT THAT USES UNAUDITED CODE.
  * DO NOT USE THIS CODE IN PRODUCTION.
  */
-contract VRFConsumer is VRFConsumerBaseV2 {
+contract VRFConsumer is VRFConsumerBaseV2Plus {
     struct Guess {
         address guesser;
         uint256 guess;
@@ -30,7 +30,7 @@ contract VRFConsumer is VRFConsumerBaseV2 {
     error RequestAlreadyResolved();
 
     /// vrfCoordinator in this case is our VRFProxy.
-    constructor(address vrfCoordinator) VRFConsumerBaseV2(vrfCoordinator) {
+    constructor(address vrfCoordinator) VRFConsumerBaseV2Plus(vrfCoordinator) {
         proxy = IVRFProxy(vrfCoordinator);
     }
 
@@ -55,7 +55,7 @@ contract VRFConsumer is VRFConsumerBaseV2 {
     }
 
     // solhint-disable-next-line
-    function fulfillRandomWords(uint256 vrfRequestID, uint256[] memory randomWords) internal override {
+    function fulfillRandomWords(uint256 vrfRequestID, uint256[] calldata randomWords) internal override {
         if (randomWords.length != 1) revert InvalidDataLength();
         Guess storage guess = guesses[vrfRequestID];
         if (guess.guesser == address(0)) revert InvalidRequestID();
